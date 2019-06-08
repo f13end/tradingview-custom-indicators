@@ -16,7 +16,7 @@
     <a href="https://github.com/f13end/tradingview-custom-indicators"><strong>Explore the indicators »</strong></a>
 <br />
 
-<p><font face="verdana" color="green">WIP!</font></p>
+<font color="green">WIP!</font>
 
 </p>
 
