@@ -13,7 +13,7 @@
   
 <br />
 <br />
-    <a href="#"><strong>Explore the indicators »</strong></a>
+    <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/indicators"><strong>Explore the indicators »</strong></a>
 <br />
 </p>
 
