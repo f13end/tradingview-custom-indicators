@@ -10,7 +10,8 @@
 
   <p align="center">
     An awesome collection of the various technical indicators implemented in Pine Script Language.
-
+  
+<br />
 <br />
     <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the indicators »</strong></a>
 <br />
