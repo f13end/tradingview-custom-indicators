@@ -13,7 +13,7 @@
   
 <br />
 <br />
-    <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the indicators »</strong></a>
+    <a href="#"><strong>Explore the indicators »</strong></a>
 <br />
 </p>
 
