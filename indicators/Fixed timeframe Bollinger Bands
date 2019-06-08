@@ -1,0 +1,58 @@
+// BTC: 3BMEXf83hTNFcPdqmMCYw8dJjMN4bpFP2E
+// ETH: 0xAfa0C533DDD9A80DFAD7dCD14b19977530c810b3
+//
+// Code taken and hacked together from munkeefonix and yield65
+//
+// Pretty basic
+// input(XX = time length (don't forget to change the title as needed)
+// that's literally all you need to know
+
+study(title="BB fixed M55", overlay=true, precision=0)
+
+
+multIntra()=>(isintraday ? 1.0 : (isdaily ? 1440.0 : isweekly ? 10080.0 : 43320.0))
+multDaily()=>multIntra() / 1440.0
+
+_useDaily=input(false, "Daily Interval")
+_t=input(55.0, "Interval", float, minval=1.0) / (_useDaily ? multDaily() : multIntra())
+
+showxobb = input(true, title="%BB bounds?")
+display_bb=input(true, "Display BBs?", type=bool)
+usevwma = input(false, "Use VWMA for BB?(ALMA)", type=bool)
+bbmodel = input(1, minval=1, maxval=3, title="BB Model")
+
+//====BB====
+bbcolor1 = #9D57E8
+bbcolor2 = #E34CB4
+bbcolor3 = #1874CD
+mult = bbmodel == 1 ? 2.0 : bbmodel == 2 ? 1.5 : 2.5
+bblen = bbmodel == 1 ? 21 : bbmodel == 2 ? 10 : 50
+bblen_f = round(bblen * _t / interval)
+//_lenScale = round(_length * _t / interval)
+basis = usevwma ? vwma(hl2, bblen_f) : alma(hl2, bblen_f, 0.75, 4)
+dev = mult * stdev(hl2, bblen_f)
+upper = basis + dev
+lower = basis - dev
+
+_offset = round(input(0, type=float, title="Offset") * (_t / interval))
+
+plot(display_bb ? basis : na, color=blue, style=line, linewidth=2, offset=_offset)
+p1bb = plot(display_bb ? upper : na, color=blue, transp=0, linewidth=2, offset=_offset)
+p2bb = plot(display_bb ? lower :na, color=blue, transp=0, linewidth=2, offset=_offset)
+fill(p1bb, p2bb, color=bbcolor3, transp=75, editable=true, title="BB Fill")
+//====BB====
+
+//%BB Code starts
+pbbmid = sma(close, bblen_f)
+pdev = 2.0 * stdev(close, bblen_f)
+pbbtop = pbbmid + pdev
+pbblow = pbbmid - pdev
+pbb = (close - pbblow) / (pbbtop - pbblow)
+bbw = (pbbtop - pbblow)/pbbmid
+xobot = crossunder(pbb, 0)
+xotop = crossover(pbb, 1)
+alertcondition(xotop, title="%BB > 1", message="%BB breached upwards")
+alertcondition(xobot, title="%BB < 0", message="%BB breached downwards")
+plotshape(showxobb ? pbb >= 1 : na, title="Dot mark Up", style=shape.triangleup, location=location.top, color=yellow, transp=0, size=size.tiny, editable=false)
+plotshape(showxobb ? pbb <= 0 : na, title="Dot mark Down", style=shape.triangledown, location=location.bottom, color=red, transp=0, size=size.tiny, editable=false)
+//%BB Code ends

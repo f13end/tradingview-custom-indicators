@@ -1,0 +1,81 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="Chaikin Oscillator [Yield]", shorttitle="Chaikin [Yield]", precision=0, overlay=false)
+
+offset = input(0.55,minval=0.05, step=0.05)
+sigma = input(2,minval=1)
+offsets = input(0.85, step=0.05, minval=0.05, maxval=1.0)
+sigmas = input(6, step=1, minval=1)
+showadl = input(false, title="Show ADL?")
+showhist = input(true, title="Show histogram?")
+t = tickerid(syminfo.prefix, ticker)
+src = security(t, period, close)
+realc = security(t, period, close)
+realh = security(t, period, high)
+reall = security(t, period, low)
+
+mfm = (( realc -  reall) - (realh - realc)) /(realh - reall) 
+mfv = mfm * volume
+adl = 0.0
+adl := nz(adl[1]) + mfv
+ 
+//fast term ribbon
+ftrb1 = alma(adl, 5, offset, sigma)
+ftrb2 = alma(adl, 10, offset, sigma)
+ftrb3 = alma(adl, 15, offset, sigma)
+short = avg(ftrb1,ftrb2,ftrb3)
+
+//slow term ribbon 30, 35, 40, 45, 50, and 60
+strb1 = alma(adl, 20, offset, sigma)
+strb2 = alma(adl, 25, offset, sigma)
+strb3 = alma(adl, 30, offset, sigma)
+strb4 = alma(adl, 35, offset, sigma)
+long = avg(strb1,strb2,strb3,strb4)
+
+osc = short - long
+
+ma0 = showadl ? alma(adl,5, offsets, sigmas) : alma(osc,5, offsets, sigmas)
+ma1 = showadl ? alma(adl,10, offsets, sigmas) : alma(osc,10, offsets, sigmas)
+ma2 = showadl ? alma(adl,15, offsets, sigmas) : alma(osc,15, offsets, sigmas)
+ma3 = showadl ? alma(adl,20, offsets, sigmas) : alma(osc,20, offsets, sigmas)
+ma4 = showadl ? alma(adl,25, offsets, sigmas) : alma(osc,25, offsets, sigmas)
+ma5 = showadl ? alma(adl,30, offsets, sigmas) : alma(osc,30, offsets, sigmas)
+ma6 = showadl ? alma(adl,35, offsets, sigmas) : alma(osc,35, offsets, sigmas)
+
+trend = (ma0+ma1+ma2+ma3+ma4+ma5+ma6)/7
+
+crimson = #DC143C
+steelblue = #4682B4
+forestgreen = #228B22
+darkgray = #A9A9A9
+darkorange = #FF8C00
+cyan = #00FFFF
+orange_red = #FF4500
+mintcream = #F5FFFA
+signal = trend
+belowsignal = osc <= trend
+belowzero = osc <= 0
+adlcolor = adl > trend and showadl ? forestgreen : crimson
+histosc = not showadl ? osc - trend : na
+osc_color = belowsignal and belowzero ? orange_red : belowzero and osc > signal ? forestgreen : osc > 0 and osc > signal ? lime : crimson
+histcolor = not showadl and histosc > 0 ? forestgreen : not showadl and histosc < 0 ? crimson : na
+xcolor = osc < 0 ? crimson : forestgreen
+plot(showadl ? adl : na, color=adlcolor, style=line, transp=0, title="ADL", linewidth=2)
+plot(not showadl and showhist ? histosc : na, color=histcolor, style=histogram, transp=0, title="Histogram", linewidth=4)
+plot(not showadl ? osc : na, color=osc_color, style=line, transp=0, title="Chaikin Osc", linewidth=2)
+plot(trend, color=darkorange, style=line, transp=0, title="Trend", linewidth=2)
+plot(showadl ? na : 0, title="Zero", color=#7B68EE, transp=0)
+
+plotshape(crossover(osc, 0) and not showadl ? osc : na, title="Above 0", style=shape.diamond, location=location.top, color=xcolor, transp=0, size=size.tiny, editable=false)
+plotshape(crossunder(osc, 0) and not showadl ? osc : na, title="Below 0", style=shape.diamond, location=location.bottom, color=xcolor, transp=0, size=size.tiny, editable=false)

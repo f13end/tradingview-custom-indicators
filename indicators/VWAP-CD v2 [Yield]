@@ -1,0 +1,77 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study("VWAP-CD v2 [Yield]", shorttitle="VWAP-CD v2 [Yield]", precision=0, overlay=false)
+ma1len = input(5, "VWMA Price Period", step=1, minval=1)
+psource = input(false, title="Use VWMA?(Close)")
+useheikin = input(true, title="Use Heikin-Ashi?")
+strend = input(true, title="Show MAs?")
+showxo = input(false, title="Show crossings?")
+smoothp = input(3, "Smooth factor", step=1, minval=0)
+
+src = useheikin ? security(heikinashi(tickerid), period, close) : close
+
+offset = 0.75
+sigma = 4
+
+ma1 = psource ? vwma(src, ma1len) : src
+
+vwapxo = isintraday ? ma1 - vwap(close) : 0
+
+mainline = smoothp > 0 ? alma(vwapxo, smoothp, 0.85,6) : vwapxo
+sline0 = alma(vwapxo, 3, offset, sigma)
+
+//fast term ribbon 3, 5, 8, 10, 12, and 18
+ftrb1 = alma(vwapxo, 3, offset, sigma)
+ftrb2 = alma(vwapxo, 5, offset, sigma)
+ftrb3 = alma(vwapxo, 8, offset, sigma)
+ftrb4 = alma(vwapxo, 10, offset, sigma)
+ftrb5 = alma(vwapxo, 12, offset, sigma)
+ftrb6 = alma(vwapxo, 18, offset, sigma)
+sline1 = (ftrb1+ftrb2+ftrb3+ftrb4+ftrb5+ftrb6)/6
+
+//slow term ribbon 30, 35, 40, 45, 50, and 60
+strb1 = alma(vwapxo, 30, offset, sigma)
+strb2 = alma(vwapxo, 35, offset, sigma)
+strb3 = alma(vwapxo, 40, offset, sigma)
+strb4 = alma(vwapxo, 45, offset, sigma)
+strb5 = alma(vwapxo, 50, offset, sigma)
+strb6 = alma(vwapxo, 60, offset, sigma)
+sline2 = (strb1+strb2+strb3+strb4+strb5+strb6)/6
+
+slinexobull = crossover(sline1,sline2)
+slinexobear = crossunder(sline1,sline2)
+
+hist = mainline 
+
+//color codes
+crimson = #DC143C
+forestgreen = #228B22
+darkorange = #FF8C00
+
+//xcolor = mainline >= 0 ?  #11D811 : #FF4500
+xcolor = mainline < sline1 and mainline < sline2 ? crimson : mainline > sline1 and mainline > sline2 ? forestgreen : darkorange
+
+crossing_u = crossover(sline0, 0)
+crossing_d = crossunder(sline0, 0)
+isnegative = hist < 0
+ispositive = hist >= 0
+isstrong = change(hist,1) > 0
+isweak = change(hist,1) <= 0
+
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(strend and isintraday ? sline2 : na, style = line, color=#E500BB , linewidth=2, transp=0, title="Long MA")
+plot(strend and isintraday ? sline1 : na, style = line, color=#1A9AB2 , linewidth=2, transp=0, title="Short MA")
+plot(isintraday ? mainline : na, style=line, color=xcolor, linewidth=2, transp=0,title="Price trend")
+plotshape(showxo and isintraday ? slinexobull : na, title="Bullish XO", style=shape.labelup, location=location.bottom, color=forestgreen, transp=0, size=size.tiny, editable=false)
+plotshape(showxo and isintraday ? slinexobear : na, title="Bearish XO", style=shape.labeldown, location=location.top, color=crimson, transp=0, size=size.tiny, editable=false)

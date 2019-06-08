@@ -1,0 +1,60 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="DeMarker [Yield]", shorttitle="DeMarker [Yield]", precision=2)
+per=input(title="Period",type=integer,defval=13, step=1, minval=1)
+showhist = input(false, title="Show Histogram?")
+smooth = input(true, title="Apply smoothing?")
+t = tickerid(syminfo.prefix, ticker)
+src = security(t, period, close)
+realh = security(t, period, high)
+reall = security(t, period, low)
+offset = 0.55
+sigma = 1
+demax = realh>realh[1] ? realh-realh[1] : 0   
+demin = reall<reall[1] ? reall[1]-reall : 0
+demax_av = alma(demax,per, offset, sigma)
+demin_av = alma(demin,per, offset, sigma)
+dmark_osc = demax_av/(demax_av+demin_av)
+offsets = 0.85
+sigmas = 6
+dmark = smooth ? alma(dmark_osc, 3, offsets, sigmas) : dmark_osc
+//signal calculation
+calcsig(sigsrc)=>
+    ma1 = alma(sigsrc,13, offsets, sigmas)
+    ma2 = alma(sigsrc,21, offsets, sigmas)
+    ma3 = alma(sigsrc,34, offsets, sigmas)
+    _signal = avg(ma1,ma2,ma3)
+//end Signal calculation
+demarkersig = calcsig(dmark_osc)
+signal = demarkersig
+hist = dmark - signal
+histcolor = hist > 0 ? green : red
+entry = crossover(dmark, demarkersig) and dmark < 0.3
+exit = crossunder(dmark, demarkersig) and dmark > 0.7
+overbought = crossover(dmark, 0.7) and dmark > demarkersig
+oversold = crossunder(dmark, 0.3) and dmark < demarkersig
+plot(1.0, title="Top", color=#7B68EE, transp=0)
+plot(0.70, title="Overbought", color=#7B68EE, transp=50, style=circles)
+plot(0.50, title="Middle", color=#7B68EE, transp=50, style=circles)
+plot(0.30, title="Oversold", color=#7B68EE, transp=50, style=circles)
+plot(0, title="Bottom", color=#7B68EE, transp=0)
+bgcolor(entry ? green : na, transp=80, title="Enter all crypto")
+bgcolor(exit ? red : na, transp=80, title="Exit all crypto")
+plot(demarkersig, color=orange, linewidth=2, title="Signal", transp=0)
+plot(dmark, linewidth=2, transp=0, color=#008000, title="DeMarker")
+plotshape(overbought, title="Overbought", style=shape.cross, location=location.top, color=red, transp=40, size=size.tiny, editable=false)
+plotshape(oversold, title="Oversold", style=shape.cross, location=location.bottom, color=green, transp=40, size=size.tiny, editable=false)
+plot(showhist ? hist : na, style=columns, linewidth=2, transp=0, color=histcolor, title="Histogram")
+alertcondition(overbought, title='Overbought', message='DeMarker over 70%')
+alertcondition(oversold, title='Oversold', message='DeMarker below 30%')

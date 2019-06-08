@@ -1,0 +1,29 @@
+//@version=3
+study(title="Equilibrium", shorttitle="EQUI", overlay=true)
+
+// Getting inputs
+fast_length = 35
+slow_length = 55
+src = input(title="Source", type=source, defval=open)
+signal_length = 32
+
+// Calculating
+fast_ma = sma(src, fast_length) 
+slow_ma = sma(src, slow_length)
+macd = fast_ma - slow_ma
+
+signal = sma(macd, signal_length) 
+hist = macd - signal
+
+crossLines = macd[2] > signal[2] and macd[1]  <= signal[1]
+crossLines2 = macd[2] < signal[2] and macd[1]  >= signal[1]
+
+s = 0.0
+s := macd[1] > signal[1]  ? nz(s[1]) : open -atr(14)*3
+
+plot(s, color=red,  transp = 50)
+
+
+plotshape(crossLines, location=location.abovebar, style = shape.triangleup, color=red,  text="S")
+plotshape(crossLines2, location=location.belowbar, style = shape.triangleup, color=lime,  text="B")
+

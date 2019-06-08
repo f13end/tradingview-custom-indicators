@@ -1,0 +1,83 @@
+//@version=3
+//The files in this repository are created by me and provided under the MIT License
+//located at https://github.com/yield65/tradingview/blob/master/LICENSE
+//If you find them useful please consider making a donation, thank you.
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+
+study("UltrafastParrot TSI [Yield]", shorttitle="UltrafastParrot TSI [Yield]", precision=1)
+short = input(title="Short ALMA Length", type=integer, defval=5)
+long = input(title="Long ALMA Length", type=integer, defval=21)
+showhist = input(true, type=bool, title="Show Histogram?")
+shapes = input(false, type=bool, title="Show signal crossings?")
+showbg =input(true, type=bool, title="Paint BG?")
+
+//Fast period
+offset = input(0.75, step=0.05, minval=0.05, title="Fast Offset")
+sigma = input(4, step=1, minval=1, title="Fast Sigma")
+//Long-Trend period
+offsetT = input(0.75, step=0.05, minval=0.05, title="Trend Offset")
+sigmaT = input(4, step=1, minval=1, title="Trend Sigma")
+//Signal
+offsets = input(0.85, step=0.05, minval=0.05, title="Signal Offset")
+sigmas = input(6, step=1, minval=1, title="Signal Sigma")
+
+t = tickerid(syminfo.prefix, ticker)
+src = security(t, period, close)
+pc = change(security(t, period, close))
+
+double_smooth(src, long, short) =>
+    first_smooth = alma(src, long, offsetT, sigmaT)
+    alma(first_smooth, short, offset, sigma)
+double_smoothed_pc = double_smooth(pc, long, short)
+double_smoothed_abs_pc = double_smooth(abs(pc), long, short)
+
+tsi_line = 100 * (double_smoothed_pc / double_smoothed_abs_pc)
+tsi = tsi_line
+
+ma0 = alma(tsi,3, offsets, sigmas)
+ma1 = alma(tsi,5, offsets, sigmas)
+ma2 = alma(tsi,8, offsets, sigmas)
+ma3 = alma(tsi,13, offsets, sigmas)
+ma4 = alma(tsi,21, offsets, sigmas)
+ma5 = alma(tsi,34, offsets, sigmas)
+ma6 = alma(tsi,55, offsets, sigmas)
+tsi_signal = (ma0+ma1+ma2+ma3+ma4+ma5+ma6)/7
+tsi_hist = tsi_line - tsi_signal
+forestgreen = #228B22
+crimson = #DC143C
+darkorange = #FF8C00
+bbcolor = #F5FFFA
+
+belowsignal = tsi_line <= tsi_signal
+crossing_u = crossover(tsi_line, tsi_signal)
+crossing_d = crossunder(tsi_line, tsi_signal)
+
+xoup = crossover(tsi_line, 0)
+xodn = crossunder(tsi_line, 0)
+
+tsi_color = belowsignal ? crimson : forestgreen
+tsi_color_hist = belowsignal and tsi_hist >= tsi_hist[1] ? maroon : belowsignal and tsi_hist < tsi_hist[1] ? crimson : tsi_hist < tsi_hist[1] ? forestgreen : lime
+
+bgcolor(xoup and showbg ? forestgreen : na, transp=75, editable=false)
+bgcolor(xodn and showbg ? crimson : na, transp=75, editable=false)
+
+plot(showhist ? tsi_hist : na, color=tsi_color_hist, style=histogram, linewidth=4, transp=0, editable=true, title="Histogram")
+
+plot(75, title="Overbought", color=#7B68EE, transp=50, style=circles)
+plot(0, title="Zero", color=#7B68EE, transp=0)
+plot(-75, title="Oversold", color=#7B68EE, transp=50, style=circles)
+
+plot(tsi, linewidth=2, transp=0, style=line, editable=true, color=tsi_color, title="TSI")
+plot(tsi_signal, linewidth=2, transp=0, style=line, editable=true, color=darkorange, title="TSI Signal")
+
+plotshape(shapes ? crossing_u : na, title="Dot mark Up", style=shape.arrowup, location=location.top, color=forestgreen, transp=0, size=size.tiny, editable=false)
+plotshape(shapes ? crossing_d : na, title="Dot mark Down", style=shape.arrowdown, location=location.bottom, color=crimson, transp=0, size=size.tiny, editable=false)
+
+alertcondition(crossing_d, title='XOPREDN', message='TSI signal bearish')
+alertcondition(crossing_u, title='XOPREUP', message='TSI signal bullish')
+
+alertcondition(xodn, title='TSIDN', message='TSI completely bearish')
+alertcondition(xoup, title='TSIUP', message='TSI completely bullish')

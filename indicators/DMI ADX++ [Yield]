@@ -1,0 +1,87 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="DMI/ADX++ [Yield]", shorttitle="DMI/ADX++ [Yield]", precision=0)
+keyLevel = input(25, title="key level for ADX")
+lvlhist = input(10, title="Hist Key level")
+adxlen = input(26, title="ADX Smoothing")
+dilen = input(13, title="DI Length")
+showhist = input(true, type=bool, title="Show histogram?")
+paintbg = input(true, title="Paint background for DIs>KL?")
+trp = input(80, step=5, minval=0, maxval=100, title="Transparency")
+
+t = tickerid(syminfo.prefix, ticker)
+src = security(t, period, close)
+reallow = security(t, period, low)
+realhigh = security(t, period, high)
+
+dirmov(len) =>
+	up = change(realhigh)
+	down = -change(reallow)
+	truerange = rma(tr, len)
+	plus = fixnan(100 * rma(up > down and up > 0 ? up : 0, len) / truerange)
+	minus = fixnan(100 * rma(down > up and down > 0 ? down : 0, len) / truerange)
+	[plus, minus]
+
+adx(dilen, adxlen) => 
+	[plus, minus] = dirmov(dilen)
+	sum = plus + minus
+	adx = 100 * rma(abs(plus - minus) / (sum == 0 ? 1 : sum), adxlen)
+	[adx, plus, minus]
+
+[sig, up, down] = adx(dilen, adxlen)
+
+basecolor = #F5F5F5
+highblue = #00BFFF
+color1 = #DCB9F7
+color2 = #7CE9F9
+color3 = #77FC3F
+color4 = #FF4400
+color5 = #860EC9
+color6 = #00FF00
+crimson = #DC143C
+forestgreen = #228B22
+dodgerblue = #1E90FF
+moccasin = #FFE4B5
+grey = #808080
+
+bullish = up >= down
+bearish = down > up
+
+histmain = bullish ? up - down : down - up
+greentone = bullish and up < 20 ? grey : bullish and histmain > histmain[1] ? lime : bullish ? forestgreen : na 
+redtone = bearish and down < 20 ? grey : bearish and histmain > histmain[1] ? crimson : bearish ? maroon : na
+histmaincolor = bullish ? greentone : bearish ? redtone : na
+histkey = bullish and up > keyLevel ? histmain + (up - keyLevel) : bearish and down > keyLevel ? histmain + (down - keyLevel) : 0
+histkeycolor = bullish and histkey > 0 ?  moccasin : bearish and histkey > 0 ? color5 : na
+
+bgup = bullish and histkey > 0
+bgdn = bearish and histkey > 0
+
+adxcolor = sig > keyLevel and bgup ? dodgerblue : sig > keyLevel and bgdn ? orange : grey
+
+bgcolor(bgup and paintbg ? lime : bgdn and paintbg ? orange : na, transp=trp, editable=false)
+hline(45, 'Overheat', linestyle=dotted, linewidth=1, color=white, editable=false)
+//hline(keyLevel, 'keyLevel', linestyle=dashed, linewidth=1, color=white, editable=false)
+plot(showhist ? na : keyLevel, 'keyLevel', style=dashed, linewidth=1, color=white, editable=false)
+plot(showhist ? lvlhist : na, 'Level Hist', style=dashed, linewidth=1, color=white, editable=false)
+//hline(10, '10', linestyle=dotted, linewidth=1, color=white, editable=false)
+hline(0, 'Zero', linestyle=solid, linewidth=1, color=white, editable=false)
+dmip=plot(showhist ? na : up, color=forestgreen, title="+DI", style=line, linewidth=2, transp=0)
+dmim=plot(showhist ? na : down, color=crimson, title="-DI", style=line, linewidth=2, transp=0)
+colorf = bullish ? forestgreen : crimson
+
+plot(showhist ? histkey : na, color = histkeycolor, transp=0, linewidth=4, title="DI/KL", editable=false, style=histogram)
+plot(showhist ? histmain : na, color = histmaincolor, transp=0, linewidth=4, title="+DI/-DI", editable=false, style=histogram)
+plot(sig, color=adxcolor, title="ADX1", style=line, linewidth=3, transp=0)
+//keyline=plot(keyLevel, 'keyLevel', style=dashed, linewidth=1, color=white, editable=false)

@@ -1,0 +1,43 @@
+// BTC: 3BMEXf83hTNFcPdqmMCYw8dJjMN4bpFP2E 
+// ETH: 0xAfa0C533DDD9A80DFAD7dCD14b19977530c810b3
+//
+//Ichimoku Cloud that will remain fixed to a time interval. I stole this and hacked it together from
+//https://www.tradingview.com/u/munkeefonix/#published-scripts
+//@author munkeefonix
+//and also from yield65's cloud code. No link as repo is gone now. RIP.
+//Input values:
+//Daily Interval: If checked then days are used for the interval.  If unchecked then minutes will be used.
+//Interval: The interval to use for the indicator. 
+//
+//If you want multiple clouds then you'll want to simply add multiple versions of the below code to your chart.
+//They use the non-japanese names. If you want to find out the japanese ones you can google it you lazy fuck.
+
+study("Ichimoku Cloud Time fixed", shorttitle="Ichiception", overlay=true)
+
+multIntra()=>(isintraday ? 1.0 : (isdaily ? 1440.0 : isweekly ? 10080.0 : 43320.0))
+multDaily()=>multIntra() / 1440.0
+
+_con=input(8, "Conversion/Tenkan-sen", integer, minval=1)
+_turn=input(34, "Turn", integer, minval=1)
+_lag=input(55, "Lag", integer, minval=1)
+_offset=input(21, "Displacement", integer, minval=1)
+_useDaily=input(false, "Daily Interval")
+_t=input(987.0, "Interval", float, minval=1.0) / (_useDaily ? multDaily() : multIntra())
+
+per(v, p)=> round(v * (p / interval))
+conversion (c,p)=> ((highest(high, per(c, p))+lowest(low, per(c, p))) / 2.0) 
+senkouA (p)=> ((conversion(_con, p) + conversion(_turn, p)) / 2.0) 
+
+_offsetAdj=per(_offset, _t)
+bearcloud = #DB7093
+bullcloud = #98FB98
+
+senkouB = conversion(_lag, _t)
+
+sA = plot(senkouA(_t), color=green, offset=_offsetAdj, title="Leading Span A", linewidth=1)
+sB = plot(senkouB, color=red, offset=_offsetAdj, title="Leading Span B", linewidth=2)
+fill(sA, sB, color = senkouA(_t) > senkouB ? bullcloud : bearcloud, transp=20, title="Leading Fill Color")
+
+plot(conversion(_con, _t), color=black, linewidth=2, title="Conversion Line")
+plot(conversion(_turn, _t), color=black, linewidth=2, title="Base Line")
+plot(close, color=#333333, linewidth=1, offset=-_offsetAdj, title="Lagging Span")

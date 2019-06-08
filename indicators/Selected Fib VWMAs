@@ -1,0 +1,50 @@
+// BTC: 3BMEXf83hTNFcPdqmMCYw8dJjMN4bpFP2E
+// ETH: 0xAfa0C533DDD9A80DFAD7dCD14b19977530c810b3
+//
+// I forgot which unlucky fucker I stole this from but it wasn't yield. (Pls no basement). 
+//
+// Really simple stuff
+// input(XX = period length (don't forget to change the title as needed)
+// rescustom is your timeframes, change defval to get custome minute timeframes, it's D or W in front of the number to change to daily or
+// weekly respectively.
+// 
+// Conbinations done below that and plotting done at the end.
+// So simple even whis couldn't mess it up.
+
+study(title="Single Timeframe Moving Averages", shorttitle="Verily Watch My Ass", overlay=true)
+
+M13_VWMA_1 = input(987, minval=1, title="M13_VWMA_1")
+M144_VWMA_1 = input(233, minval=1, title="M144_VWMA_1")
+M233_VWMA_4 = input(610, minval=1, title="M233_VWMA_4")
+M377_VWMA_1 = input(233, minval=1, title="M377_VWMA_1")
+M987_VWMA_1 = input(377, minval=1, title="M987_VWMA_1")
+D1_VWMA_1 = input(377, minval=1, title="D1_VWMA_1")
+D1_VWMA_2 = input(610, minval=1, title="D1_VWMA_2")
+
+resCustom_1 = input(title="Time interval (W, D, [min])", type=string, defval="13")
+resCustom_2 = input(title="Time interval (W, D, [min])", type=string, defval="34")
+resCustom_3 = input(title="Time interval (W, D, [min])", type=string, defval="55")
+resCustom_4 = input(title="Time interval (W, D, [min])", type=string, defval="89")
+resCustom_5 = input(title="Time interval (W, D, [min])", type=string, defval="144")
+resCustom_6 = input(title="Time interval (W, D, [min])", type=string, defval="233")
+resCustom_7 = input(title="Time interval (W, D, [min])", type=string, defval="377")
+resCustom_8 = input(title="Time interval (W, D, [min])", type=string, defval="987")
+resCustom_9 = input(title="Time interval (W, D, [min])", type=string, defval="1D")
+resCustom_10 = input(title="Time interval (W, D, [min])", type=string, defval="3D")
+resCustom_11 = input(title="Time interval (W, D, [min])", type=string, defval="1W")
+
+VWMA_1 = security(tickerid, resCustom_1, vwma(close, M13_VWMA_1))
+VWMA_5 = security(tickerid, resCustom_5, vwma(close, M144_VWMA_1))
+VWMA_9 = security(tickerid, resCustom_6, vwma(close, M233_VWMA_4))
+VWMA_10 = security(tickerid, resCustom_7, vwma(close, M377_VWMA_1))
+VWMA_11 = security(tickerid, resCustom_8, vwma(close, M987_VWMA_1))
+VWMA_12 = security(tickerid, resCustom_9, vwma(close, D1_VWMA_1))
+VWMA_13 = security(tickerid, resCustom_9, vwma(close, D1_VWMA_2))
+
+plot(VWMA_1, color=green)
+plot(VWMA_5, color=purple)
+plot(VWMA_9, color=red)
+plot(VWMA_10, color=black)
+plot(VWMA_11, color=orange)
+plot(VWMA_12, color=yellow)
+plot(VWMA_13, color=aqua)

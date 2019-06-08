@@ -1,0 +1,79 @@
+//@version=3
+study(title="Cloudy Momentum V2", shorttitle="Cloudy Momentum", overlay=true)
+sensibility = input(13, minval=1)
+unicornLines = input(34)
+lead = input(13)
+
+linecolor = black
+
+lower0 = lowest(close, sensibility) - (highest(close, sensibility)-lowest(close, sensibility))*0.382
+upper0 = highest(close, sensibility) + (highest(close, sensibility)-lowest(close, sensibility))*0.382
+
+lower1 = lowest(close, sensibility) - (highest(close, sensibility)-lowest(close, sensibility))*0.618
+upper1 = highest(close, sensibility) + (highest(close, sensibility)-lowest(close, sensibility))*0.618
+
+lower2 = lowest(close, sensibility) -  (highest(close, sensibility)-lowest(close, sensibility))*1
+upper2 = highest(close, sensibility) +  (highest(close, sensibility)-lowest(close, sensibility))*1
+
+lower3 = lowest(close, sensibility) - (highest(close, sensibility)-lowest(close, sensibility))*1.318
+upper3 = highest(close, sensibility) + (highest(close, sensibility)-lowest(close, sensibility))*1.318
+
+lower4 = lowest(close, sensibility) - (highest(close, sensibility)-lowest(close, sensibility))*1.618
+upper4 = highest(close, sensibility) + (highest(close, sensibility)-lowest(close, sensibility))*1.618
+
+lower5 = lowest(close, sensibility) - (highest(close, sensibility)-lowest(close, sensibility))*2.618
+upper5 = highest(close, sensibility) + (highest(close, sensibility)-lowest(close, sensibility))*2.618
+
+
+lowerEMA0 = ema(lower0,unicornLines)
+upperEMA0 = ema(upper0,unicornLines)
+
+lowerEMA1 = ema(lower1,unicornLines)
+upperEMA1 = ema(upper1,unicornLines)
+
+lowerEMA2 = ema(lower2,unicornLines)
+upperEMA2 = ema(upper2,unicornLines)
+
+lowerEMA3 = ema(lower3,unicornLines)
+upperEMA3 = ema(upper3,unicornLines)
+
+lowerEMA4 = ema(lower4,unicornLines)
+upperEMA4 = ema(upper4,unicornLines)
+
+lowerEMA5 = ema(lower5,unicornLines)
+upperEMA5 = ema(upper5,unicornLines)
+
+
+
+basis = avg(lowerEMA4, upperEMA4)
+
+plot(basis, offset = lead, color=white)
+
+
+lEMA0 = plot(lowerEMA0, offset = lead, color=linecolor)
+uEMA0 = plot(upperEMA0, offset = lead, color=linecolor)
+lEMA1 = plot(lowerEMA1, offset = lead, color=linecolor)
+uEMA1 = plot(upperEMA1, offset = lead, color=linecolor)
+lEMA2 = plot(lowerEMA2, offset = lead, color=linecolor)
+uEMA2 = plot(upperEMA2, offset = lead, color=linecolor)
+lEMA3 = plot(lowerEMA3, offset = lead, color=linecolor)
+uEMA3 = plot(upperEMA3, offset = lead, color=linecolor)
+lEMA4 = plot(lowerEMA4, offset = lead, color=linecolor)
+uEMA4 = plot(upperEMA4, offset = lead, color=linecolor)
+lEMA5 = plot(lowerEMA5, offset = lead, color=linecolor)
+uEMA5 = plot(upperEMA5, offset = lead, color=linecolor)
+
+
+fill(lEMA0, uEMA0, color=#3AFF3330)
+
+fill(lEMA1, lEMA0, color=#FFC30050)
+fill(lEMA2, lEMA1, color=#FF573350)
+fill(lEMA3, lEMA2, color=#C7003950)
+fill(lEMA4, lEMA3, color=#900C3F50)
+fill(lEMA5, lEMA4, color=#58184550)
+
+fill(uEMA0, uEMA1, color=#FFC30050)
+fill(uEMA1, uEMA2, color=#FF573350)
+fill(uEMA2, uEMA3, color=#C7003950)
+fill(uEMA3, uEMA4, color=#900C3F50)
+fill(uEMA4, uEMA5, color=#58184550)

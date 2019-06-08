@@ -1,0 +1,16 @@
+//@version=3
+study(title="Cloudy Momentum", shorttitle="Cloudy Momentum", overlay=true)
+length = input(26, minval=1)
+emaLength = input(55)
+lower = lowest(close, length) - (highest(close, length)-lowest(close, length))*0.618
+upper = highest(close, length) + (highest(close, length)-lowest(close, length))*0.618
+
+lowerEMA = ema(lower,emaLength)
+upperEMA = ema(upper,emaLength)
+basis = avg(lowerEMA, upperEMA)
+
+lEMA = plot(lowerEMA, offset = emaLength, color=blue)
+uEMA = plot(upperEMA, offset = emaLength, color=blue)
+plot(basis, offset = emaLength, color=orange)
+
+fill(lEMA, uEMA, color=blue)

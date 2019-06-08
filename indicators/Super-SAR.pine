@@ -1,0 +1,8 @@
+//@version=3
+study(title="Super-SAR", shorttitle="SSAR")
+start = input(0.04)
+increment = input(0.03)
+maximum = input(0.2)
+out = sar(start, increment, maximum)
+dist = close - out
+plot(dist, style=columns, color = dist<0 and dist[1]>0 ? red : dist>0 and dist[1]<0 ? green : black)

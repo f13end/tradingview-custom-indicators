@@ -1,0 +1,29 @@
+//@version=3
+study("Fib's Ghost")
+
+
+long = input(36, title="Source sensitivity", minval=0)
+signalL = input(21, title= "Signal Sensitivity", minval=0)
+short = input(36, title = "Smoothing", minval=0 )
+offsett = input(13, title="Offset",minval=0)
+
+atr= atr(14)
+
+
+don1 = ema( highest(close,long) + (highest(close,long) - lowest(close,long))*1.618 + atr, short)
+don2 = ema( lowest(close,long) -  (highest(close,long) - lowest(close,long))*1.618 - atr, short)
+
+
+base = avg(don1[offsett],don2[offsett])
+
+signal = ema(close, signalL)
+
+
+hist = signal-base
+
+trend = hist>0 ?signal- don1[offsett] :  signal -don2[offsett] 
+
+plot(hist , style = histogram, color = hist >0 ? orange: blue, linewidth = 3, title="Momentum Histograms")
+plot(trend, style = line, color = hist >0 ? green: red, linewidth = 3, title="Fib's Strength Line")
+
+hline(price=0, color=white, title = "0-Line")

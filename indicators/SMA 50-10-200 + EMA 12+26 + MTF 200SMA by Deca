@@ -1,0 +1,59 @@
+//@version=3
+
+study(title="SMA 50-10-200 + EMA 12+26 + MTF 200SMA by Deca", shorttitle="SMA+EMA+MTF", overlay=true)
+
+//-------------------------------------------------------------
+//SMA
+//-----------------------------------------------------------
+checkSMA = input(true, title="Enable SMA's")
+
+short = input(50, minval=1, title="Short-Period")
+medium = input(100, minval=1, title="Medium-Period")
+long = input(200, minval=1, title="Long-Period")
+src = input(close, title="Source SMA")
+
+plot(checkSMA ? sma(src, short) : na, color=#00FF00, transp=0, linewidth=1, title="Short")
+plot(checkSMA ? sma(src, medium) : na, color=#FF9800, transp=0, linewidth=2, title="Medium")
+plot(checkSMA ? sma(src, long) : na, color=#970000, transp=0, linewidth=3, title="Long")
+//-------------------------------------------------------------
+
+
+
+//-------------------------------------------------------------
+//EMA
+//------------------------------------------------------------
+// Checkbox's for the  EMA's
+checkEMA = input(true, title="Enable EMA's")
+
+len = input(12, minval=1, title="Period EMA 1")
+len2 = input(26, minval=1, title="Period EMA 2")
+
+src_ema = input(close, title="Source EMA 1")
+src_ema_2 = input(close, title="Source EMA 2")
+
+ema1 = ema(src_ema, len)
+ema2 = ema(src_ema_2, len2)
+
+plot(checkEMA and ema1 ? ema1: na, title="EMA 1", color=#56b7ff,transp=0, linewidth=1, title="Short")
+plot(checkEMA and ema2 ? ema2: na, title="EMA 2", color=#e536ff, transp=0, linewidth=1, title="Medium")
+//-------------------------------------------------------------
+
+
+//-------------------------------------------------------------
+//SMA MTF
+//------------------------------------------------------------
+showWeekly = input(false, defval=false, title="Enable W SMA")
+showMonthly = input(false, defval=false, title="Display M SMA")
+TFweekly = input('W')
+TFmontly = input('M')
+
+ma_src = input(close, title="MTF Field")
+ma_length = input(200, title="MTF Period")
+off=input(0, title="Offset")
+mtfma=sma(ma_src, ma_length)
+mtfmaWeekly = showWeekly  ?  security(tickerid, TFweekly, sma(ma_src, ma_length)) :  na
+mtfmaMonthly = showMonthly ? security(tickerid, TFmontly, sma(ma_src, ma_length))  : na
+
+plot(mtfmaWeekly, offset=off, title="Weekly", style=line, color=close>=mtfmaWeekly ? green : maroon, linewidth=2, join=true)
+plot(mtfmaMonthly, offset=off, title="Montly", style=line, color=close>=mtfmaMonthly ? green : maroon, linewidth=2, join=true)
+//-------------------------------------------------------------

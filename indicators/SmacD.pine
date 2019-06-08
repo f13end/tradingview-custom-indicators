@@ -1,0 +1,33 @@
+//@version=3
+study(title="SmacD", shorttitle="Smacd")
+
+// Getting inputs
+
+len1 = input(8, minval=1)
+len2 = input(13, minval=1)
+len3 = input(21, minval=1)
+len4 = input(55, minval=1)
+len5 = input(89, minval=1)
+len6 = input(36)
+
+signal_length = input(13,minval=1)
+
+src = open
+
+
+ema8 = ema(src, len1)
+ema13 = ema(src, len2)
+ema21 = ema(src, len3)
+ema55 = ema(src,len4)
+ema89 = ema(src,len5)
+
+macd = -(ema8-ema13)+(ema13-ema21)+(ema21-ema55)+(ema55-ema89) 
+
+signal = ema(macd, signal_length) 
+
+top = crossunder(macd,signal)  or (macd>0 and (macd <= macd[1] and macd[1] >= macd[2]))
+bot = crossover(macd,signal) or  (macd<0 and( macd >= macd[1] and macd[1] <= macd[2] )) 
+
+
+plot(macd, title="MACD", color=(top ? red : (bot? green : black)), transp=0, style=columns)
+

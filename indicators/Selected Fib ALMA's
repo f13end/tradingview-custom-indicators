@@ -1,0 +1,49 @@
+// BTC: 3BMEXf83hTNFcPdqmMCYw8dJjMN4bpFP2E
+// ETH: 0xAfa0C533DDD9A80DFAD7dCD14b19977530c810b3
+//
+// I forgot which unlucky fucker I stole this from but it wasn't yield. (Pls no basement). 
+//
+// Really simple stuff
+// input(XX = period length (don't forget to change the title as needed)
+// rescustom is your timeframes, change defval to get custome minute timeframes, it's D or W in front of the number to change to daily or
+// weekly respectively.
+// 
+// Conbinations done below that and plotting done at the end.
+// So simple even whis couldn't mess it up.
+
+study(title="Single Timeframe Moving Averages", shorttitle="All Love My Ass", overlay=true)
+
+offset = input(0.75, step=0.05, minval=0.05)
+sigma = input(4, step=1, minval=1)
+
+M55_ALMA_1 = input(987, minval=1, title="M55_ALMA_1")
+M89_ALMA_1 = input(233, minval=1, title="M89_ALMA_1")
+M89_ALMA_4 = input(987, minval=1, title="M89_ALMA_4")
+M610_ALMA_1 = input(377, minval=1, title="M610_ALMA_1")
+M987_ALMA_1 = input(377, minval=1, title="M987_ALMA_1")
+M987_ALMA_2 = input(610, minval=1, title="M987_ALMA_2")
+D1_ALMA_1 = input(987, minval=1, title="D1_ALMA_1")
+
+resCustom_1 = input(title="Time interval (W, D, [min])", type=string, defval="55")
+resCustom_2 = input(title="Time interval (W, D, [min])", type=string, defval="89")
+resCustom_3 = input(title="Time interval (W, D, [min])", type=string, defval="144")
+resCustom_4 = input(title="Time interval (W, D, [min])", type=string, defval="233")
+resCustom_5 = input(title="Time interval (W, D, [min])", type=string, defval="610")
+resCustom_6 = input(title="Time interval (W, D, [min])", type=string, defval="987")
+resCustom_7 = input(title="Time interval (W, D, [min])", type=string, defval="1D")
+
+ALMA_1 = security(tickerid, resCustom_1, alma(close, M55_ALMA_1, offset, sigma))
+ALMA_2 = security(tickerid, resCustom_2, alma(close, M89_ALMA_1, offset, sigma))
+ALMA_5 = security(tickerid, resCustom_2, alma(close, M89_ALMA_4, offset, sigma))
+ALMA_9 = security(tickerid, resCustom_5, alma(close, M610_ALMA_1, offset, sigma))
+ALMA_11 = security(tickerid, resCustom_6, alma(close, M987_ALMA_1, offset, sigma))
+ALMA_12 = security(tickerid, resCustom_6, alma(close, M987_ALMA_2, offset, sigma))
+ALMA_13 = security(tickerid, resCustom_7, alma(close, D1_ALMA_1, offset, sigma))
+
+plot(ALMA_1, color=green)
+plot(ALMA_2, color=red)
+plot(ALMA_5, color=purple)
+plot(ALMA_9, color=orange)
+plot(ALMA_11, color=maroon)
+plot(ALMA_12, color=aqua)
+plot(ALMA_13, color=lime)

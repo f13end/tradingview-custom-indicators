@@ -1,0 +1,24 @@
+//@version=3
+study(title="Stitchy", shorttitle="Stitchy")
+
+conversionPeriods = input(13, minval=1, title="Short Periods"),
+basePeriods = input(36, minval=1, title="Base Line Periods")
+laggingSpan2Periods = basePeriods*2
+signalL = input(9, title="Smoothing")
+speeddiff = input(0.05,step=0.01, title="Volatility Facotr")
+speed=speeddiff + 0.5
+
+donchian(len) => avg(lowest(len), highest(len))
+atr = atr(14)
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = speed*avg(conversionLine, baseLine) + (1-speed)*(close+atr)
+leadLine2 = (1-speed)*donchian(laggingSpan2Periods) + speed*(close +atr)
+
+
+stichy =ema(leadLine1-leadLine2,signalL)
+
+plot(stichy, style=area, color= black)
+hline(price=0.0,color=white)
+
+

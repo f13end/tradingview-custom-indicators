@@ -1,0 +1,36 @@
+//@version=3
+study(title="DonSmacd", shorttitle="DonS")
+
+// Getting inputs
+fast_length = input(title="Fast Length", type=integer, defval=35)
+slow_length = input(title="Slow Length", type=integer, defval=55)
+src = input(title="Source", type=source, defval=close)
+signal_length = input(title="Signal Smoothing", type=integer, defval = 32)
+sma_source = input(title="Simple MA(Oscillator)", type=bool, defval=false)
+sma_signal = input(title="Simple MA(Signal Line)", type=bool, defval=false)
+
+// Plot colors
+col_grow_above = #26A69A
+col_grow_below = #FFCDD2
+col_fall_above = #B2DFDB
+col_fall_below = #EF5350
+col_macd = #0094ff
+col_signal = #ff6a00
+
+// Calculating
+fast_ma = avg(lowest(fast_length), highest(fast_length) )
+slow_ma = avg(lowest(slow_length), highest(slow_length) )
+macd = fast_ma - slow_ma
+
+signal = avg(lowest(macd,signal_length), highest(macd,signal_length) )
+hist = macd - signal
+top = (hist>0 and (hist <= hist[1] and hist[1] >= hist[2]) ) or crossunder(macd,signal) //or
+bot = crossover(macd,signal) or  (hist<0 and( hist >= hist[1] and hist[1] <= hist[2] )) //
+
+
+
+plot(hist, title="Histogram", style=columns, color=(hist>=0 ? (hist[1] < hist ? col_grow_above : col_fall_above) : (hist[1] < hist ? col_grow_below : col_fall_below) ), transp=0 )
+plot(macd, title="MACD", color=white, transp=0)
+plot(signal, title="Signal", color=black, transp=0)
+
+

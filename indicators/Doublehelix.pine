@@ -1,0 +1,44 @@
+
+study(title="DoubleHelix", shorttitle="DHex", overlay=true)
+
+len1 = input(70, minval=1)
+len2 = input(85, minval=1)
+len3 = input(100, minval=1)
+len4 = input(110, minval=1)
+len5 = input(120, minval=1)
+len6 = input(130, minval=1)
+
+base = input(10, minval=1)
+
+src = input(close, title="Source")
+
+ema8 = ema(src, len1)
+ema13 = ema(src, len2)
+ema21 = ema(src, len3)
+ema36 = ema(src,len4)
+ema55 = ema(src,len5)
+ema89 = ema(src,len6)
+
+baseLine = ema(src,base)
+
+c1 = baseLine + ( baseLine - ema8)
+c2 = baseLine + ( baseLine - ema13)
+c3 = baseLine + ( baseLine - ema21)
+c4 = baseLine + ( baseLine - ema36)
+c5 = baseLine + ( baseLine - ema55)
+c6 = baseLine + ( baseLine - ema89)
+
+
+plot(ema8, color=red, linewidth=2 , title="EMA70-red")
+plot(ema13, color=red, linewidth=2 , title="EMA85-red")
+plot(ema21, color=red,  linewidth=2 , title="EMA100-red")
+plot(ema36, color=red,  linewidth=2 , title="EMA110-red" )
+plot(ema55, color=red, linewidth=2 , title="EMA120-red")
+plot(ema89, color=red, linewidth=2 , title="EMA130-red")
+
+plot(c1, color=blue, linewidth=2 , title="EMA70-blue")
+plot(c2, color=blue, linewidth=2 , title="EMA85-blue")
+plot(c4, color=blue,  linewidth=2 , title="EMA100-blue")
+plot(c3, color=blue,  linewidth=2 , title="EMA110-blue")
+plot(c5, color=blue, linewidth=2 , title="EMA120-blue")
+plot(c6, color=blue, linewidth=2 , title="EMA130-blue")

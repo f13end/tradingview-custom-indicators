@@ -1,0 +1,10 @@
+//@version=3
+study(title="StrongerTRIX", shorttitle="STRIX")
+length = input(21, minval=1)
+signalLength = input(13)
+out = 10000 * change(ema(ema(ema(log(close), length), length), length))
+signal = sma(out,signalLength)
+crossUp = crossover(signal,out)
+crossDown = crossunder(signal,out)
+plot(out-signal, linewidth = 2, style=circles, color=(crossUp? red :crossDown? green :(out-signal > 0 ? white : black) ))
+hline(0, title="Zero")

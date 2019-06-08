@@ -1,0 +1,12 @@
+study(title="SAroon", shorttitle="SAroon", overlay=false)
+length = input(21, minval=1)
+upper = 100 * (highestbars(close, length+1) + length)/length
+lower = 100 * (lowestbars(close, length+1) + length)/length
+
+crossLines = upper[1] > lower[1] and upper  <= lower
+crossLines2 = upper[1] < lower[1] and upper  >= lower
+
+plot(upper, color=crossLines2 ? red : black, style= columns)
+plot(lower, color=crossLines ? green : white , style= columns)
+hline(100, color = black)
+hline(0, color = black)

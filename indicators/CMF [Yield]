@@ -1,0 +1,72 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="Chaikin Money Flow [Yield]", shorttitle="CMF [Yield]", precision=2)
+//https://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:chaikin_money_flow_cmf
+length = input(20, minval=1)
+showxo = input(false, type=bool, title="Show 0 crossings?")
+showhist = input(false, type=bool, title="Show Histogram?")
+
+t = tickerid(syminfo.prefix, ticker)
+realO = security(t, period, open)
+realH = security(t, period, high)
+realL = security(t, period, low)
+realC = security(t, period, close)
+
+ad = realC==realH and realC==realL or realH==realL ? 0 : ((2*realC-realL-realH)/(realH-realL))*volume
+mf = sum(ad, length) / sum(volume, length)
+cmfs = alma(mf, 3, 0.75, 4)
+offsets = input(0.45, step=0.05, minval=0.1, maxval=1)
+sigmas = input(9, step=1, minval=1)
+
+//signal calculation
+calcsig(sigsrc)=>
+    ma1 = alma(sigsrc,5, offsets, sigmas)
+    ma2 = alma(sigsrc,8, offsets, sigmas)
+    ma3 = alma(sigsrc,13, offsets, sigmas)
+    ma4 = alma(sigsrc,21, offsets, sigmas)
+    ma5 = alma(sigsrc,34, offsets, sigmas)
+    _signal = avg(ma1,ma2,ma3,ma4,ma5)
+//end Signal calculation
+
+cmfsig = calcsig(mf)
+
+//histogram colors red
+color1 = #800000 // maroon (strong change)
+color2 = #CD5C5C // IndianRed (weak change)
+//histogram colors green
+color3 = #006400 //DarkGreen (weak change)
+color4 = #3CB371 //MediumSeaGreen (strong change)
+
+//main colors
+color5 = #FF0000 //red1
+color6 = #00FF00 //lime
+
+signal_color = #FF8C00
+
+hist = cmfs - cmfsig
+histstrong = change(hist,1) > 0
+histweak = change(hist,1) <= 0
+histnegative = hist < 0
+histpositive = hist >= 0
+histcolor = histstrong and histpositive ? color4 : histweak and histpositive ? color3 : histstrong and histnegative ? color1 : color2
+mfcolor = cmfs < 0 ? color5 : cmfs < cmfsig and cmfs > 0 ? color1 : color6
+crossing_u = crossover(cmfs, 0)
+crossing_d = crossunder(cmfs, 0)
+plot(showhist ? hist : na, color=histcolor, title="Histogram", transp=0, linewidth=4, editable=true, style=histogram)
+plot(cmfs, color=mfcolor, title="MF", transp=0, linewidth=2, title="CMF", editable=true, style=line)
+plot(cmfsig, color = signal_color, transp=0, linewidth=2, title="Signal", editable=true, style=line)
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+
+plotshape(showxo ? crossing_d : na, title="Dot mark Up", style=shape.triangledown, location=location.top, color=color5, transp=0, size=size.tiny, editable=false)
+plotshape(showxo ? crossing_u : na, title="Dot mark Down", style=shape.triangleup, location=location.bottom, color=color6, transp=0, size=size.tiny, editable=false)

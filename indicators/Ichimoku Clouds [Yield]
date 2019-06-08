@@ -1,0 +1,140 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="Ichimoku Clouds [Yield]", overlay=true, precision=0, scale=scale.none, linktoseries=true)
+
+tenkanSen = isintraday ? 8 : 9
+kijunSen = isintraday ? 34 : 26
+chikouSen = isintraday ? 13 : 26
+senkou = isintraday ? 55 : 52
+displacement = isintraday ? 21 : 26
+chikou_d = input(false, title="Display Chikou?")
+maxo = input(false, title="Show ALMAs?")
+piercexo = input(true, "Show cloud hits", type=bool)
+showvwap = input(false, title="Show VWAP?")
+display_ma=input(false, "Display EMA Fibs?", type=bool)
+display_bb=input(false, "Display BBs?", type=bool)
+usevwma = input(false, "Use VWMA for BB?(ALMA)", type=bool)
+bbmodel = input(1, minval=1, maxval=3, title="BB Model")
+
+//default ALMA settings
+offset = 0.75
+sigma = 4
+
+offsets = 0.85
+sigmas = 6
+
+t = tickerid(syminfo.prefix, ticker)
+realhl2 = security(t, period, hl2)
+realhlc3 = security(t, period, hlc3)
+realO = security(t, period, open)
+realH = security(t, period, high)
+realL = security(t, period, low)
+realC = security(t, period, close)
+
+//====BB====
+bbcolor1 = #9D57E8
+bbcolor2 = #E34CB4
+bbcolor3 = #1874CD
+mult = bbmodel == 1 ? 2.0 : bbmodel == 2 ? 1.5 : 2.5
+bblen = bbmodel == 1 ? 21 : bbmodel == 2 ? 10 : 50
+basis = usevwma ? vwma(realhl2, bblen) : alma(realC, bblen, offset, sigma)
+dev = mult * stdev(realhl2, bblen)
+upper = basis + dev
+lower = basis - dev
+plot(display_bb ? basis : na, color=bbcolor1, style=line, linewidth=2, transp=0, editable=false)
+p1bb = plot(display_bb ? upper : na, color=bbcolor2, transp=0, linewidth=2, editable=false)
+p2bb = plot(display_bb ? lower :na, color=bbcolor2, transp=0, linewidth=2, editable=false)
+fill(p1bb, p2bb, color=bbcolor3, transp=75, editable=true, title="BB Fill")
+//====BB====
+
+darkorange = #FF8C00
+mintcream = #F5FFFA
+
+//Ichimoku Lines
+donchian(len) => avg(lowest(realL,len), highest(realH,len))
+tenkan = donchian(tenkanSen)
+kijun = donchian(kijunSen)
+chikouline = realC
+senkouA = avg(tenkan, kijun)
+senkouB = donchian(senkou)
+
+bear = #DB7093
+bull = #98FB98
+bearcloud = #DB7093
+bullcloud = #98FB98
+
+p1 = plot(senkouA, title = 'Senkou Span A', offset = displacement, color=bullcloud, transp=60, linewidth=1, editable=false)
+p2 = plot(senkouB, title = 'Senkou Span B', offset = displacement, color=bearcloud, transp=60, linewidth=1, editable=false)
+fill(p1, p2, color = senkouA > senkouB ? bullcloud : bearcloud, transp=80, title="Senkou fill", editable=false)
+
+plot(chikou_d ? chikouline : na, title='Chikou Span', linewidth=2, offset=-displacement, color=mintcream, transp=0, editable=true)
+
+//ALMA MAs
+length0 = input(5)
+length1 = input(21)
+length2 = input(55)
+length3 = input(89)
+ma0 = alma(realC, length0, offset, sigma)
+ma1 = alma(realC, length1, offset, sigma)
+ma2 = alma(realC, length2, offset, sigma)
+ma3 = alma(realC, length3, offset, sigma)
+plot(maxo ? ma0 : na, color=aqua, transp=0, linewidth=2, editable=false)
+plot(maxo ? ma1 : na, color=yellow, transp=0, linewidth=2, editable=false)
+plot(maxo ? ma2 : na, color=fuchsia, transp=0, linewidth=2, editable=false)
+plot(maxo ? ma3 : na, color=red, transp=0, linewidth=2, editable=false)
+
+//Fib EMAs
+
+ma1_color = #AAFFFF
+ma2_color = #8DEEC2
+ma3_color = #72DD7E
+ma4_color = #80CC5A
+ma5_color = #A0BB45
+ma6_color = #A98F32
+ma7_color = #994922
+ma8_color = #871421
+
+plot(display_ma ? ema(realC,8) : na, color = ma1_color, linewidth = 2, title='EMA 8', transp=0)
+plot(display_ma ? ema(realC,13) : na, color = ma2_color, linewidth = 2, title='EMA 13', transp=0)
+plot(display_ma ? ema(realC,21) : na, color = ma3_color, linewidth = 2, title='EMA 21', transp=0)
+plot(display_ma ? ema(realC,34) : na, color = ma4_color, linewidth = 2, title='EMA 34', transp=0)
+plot(display_ma ? ema(realC,55) : na, color = ma5_color, linewidth = 2, title='EMA 55', transp=0)
+plot(display_ma ? ema(realC,89) : na, color = ma6_color, linewidth = 2, title='EMA 89', transp=0)
+plot(display_ma ? ema(realC,144) : na, color = ma7_color, linewidth = 2, title='EMA 144', transp=0)
+plot(display_ma ? ema(realC,233) : na, color = ma8_color, linewidth = 2, title='EMA 233', transp=0)
+plot(showvwap and isintraday ? vwap(realC) : na, color=darkorange, linewidth=2, transp=0, title="VWAP")
+
+//adjust displacement for the senkou lines vs price
+dispsenkouA = offset(senkouA, displacement)
+dispsenkouB = offset(senkouB, displacement)
+isgreencloud = dispsenkouA > dispsenkouB
+isredcloud = dispsenkouB > dispsenkouA
+//piercing the clouds
+climbing = (realC > dispsenkouA and dispsenkouA > dispsenkouB) or (realC > dispsenkouB and dispsenkouB > dispsenkouA)
+falling = (realC < dispsenkouA and dispsenkouA < dispsenkouB) or (realC < dispsenkouB and dispsenkouB < dispsenkouA)
+failedclimb = isgreencloud ? realH > dispsenkouA and realC < dispsenkouA : isredcloud ? realH > dispsenkouB and realC < dispsenkouB : na
+failedfall = isredcloud ? (realL < dispsenkouA and realC > dispsenkouA) : isgreencloud ? (realL < dispsenkouB) and (realC > dispsenkouB) : na
+neutral = not climbing and not falling
+colorcond = climbing ? lime : falling ? red : purple
+isbearish = colorcond == red and (colorcond[1] == lime or colorcond[1] == purple)
+isbullish = colorcond == lime and (colorcond[1] == red or colorcond[1] == purple)
+
+plotshape(piercexo ? isbullish : na, title="isbullish", style=shape.cross, location=location.abovebar, color=colorcond, transp=0, size=size.tiny, editable=false)
+plotshape(piercexo ? isbearish : na, title="isbearish", style=shape.cross, location=location.belowbar, color=colorcond, transp=0, size=size.tiny, editable=false)
+
+//plotshape(piercexo ? failedclimb : na, title="Failed up", style=shape.arrowdown, location=location.abovebar, color=green, transp=0, size=size.tiny, editable=false)
+//plotshape(piercexo ? failedfall : na, title="Failed dn", style=shape.arrowup, location=location.belowbar, color=red, transp=0, size=size.tiny, editable=false)
+
+alertcondition(isbullish, title='Pierce up', message='Piercing the cloud upwards.')
+alertcondition(isbearish, title='Pierce dn', message='Piercing the cloud downwards.')

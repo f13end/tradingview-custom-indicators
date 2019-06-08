@@ -1,0 +1,39 @@
+// BTC: 3BMEXf83hTNFcPdqmMCYw8dJjMN4bpFP2E
+// ETH: 0xAfa0C533DDD9A80DFAD7dCD14b19977530c810b3
+//
+// I forgot which unlucky fucker I stole this from but it wasn't yield. (Pls no basement). 
+//
+// Really simple stuff
+// input(XX = period length (don't forget to change the title as needed)
+// rescustom is your timeframes, change defval to get custome minute timeframes, it's D or W in front of the number to change to daily or
+// weekly respectively.
+// 
+// Conbinations done below that and plotting done at the end.
+// So simple even whis couldn't mess it up.
+
+study(title="Single Timeframe Moving Averages", shorttitle="Suck My Ass", overlay=true)
+
+M89_SMA_1 = input(55, minval=1, title="M89_SMA_1")
+M144_SMA_1 = input(21, minval=1, title="M144_SMA_1")
+M144_SMA_2 = input(89, minval=1, title="M144_SMA_2")
+M233_SMA_1 = input(144, minval=1, title="M233_SMA_1")
+M987_SMA_1 = input(55, minval=1, title="M987_SMA_1")
+M987_SMA_2 = input(89, minval=1, title="M987_SMA_2")
+resCustom_1 = input(title="Time interval (W, D, [min])", type=string, defval="89")
+resCustom_2 = input(title="Time interval (W, D, [min])", type=string, defval="144")
+resCustom_3 = input(title="Time interval (W, D, [min])", type=string, defval="233")
+resCustom_4 = input(title="Time interval (W, D, [min])", type=string, defval="987")
+
+SMA_1 = security(tickerid, resCustom_1, sma(close, M89_SMA_1))
+SMA_2 = security(tickerid, resCustom_2, sma(close, M144_SMA_1))
+SMA_3 = security(tickerid, resCustom_2, sma(close, M144_SMA_2))
+SMA_4 = security(tickerid, resCustom_3, sma(close, M233_SMA_1))
+SMA_5 = security(tickerid, resCustom_4, sma(close, M987_SMA_1))
+SMA_6 = security(tickerid, resCustom_4, sma(close, M987_SMA_2))
+
+plot(SMA_1, color=green)
+plot(SMA_2, color=red)
+plot(SMA_3, color=blue)
+plot(SMA_4, color=black)
+plot(SMA_5, color=purple)
+plot(SMA_6, color=teal)

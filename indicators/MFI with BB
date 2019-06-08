@@ -1,0 +1,102 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="MFI with BB [Yield]", shorttitle="MFI with BB [Yield]", precision=0)
+t = tickerid(syminfo.prefix, ticker)
+realhlc3 = security(t, period, hlc3)
+realclose = security(t, period, close)
+fixlen = input(8, minval=1, title="MFI Fixed Length")
+useavg = input(true, title="Average MFI?(Fixed)")
+ribsig = input(true, title="Ribbon signal?")
+siglen = input(21, minval=1, title="Fixed SigLen")
+mult = input(2.0, minval=0.001, maxval=50)
+smooth = input(true, title="3MA MFI Smooth?")
+showhits = input(true, title="Show BB hits?", type=bool)
+showzones = input(false, title="Show Zones?", type=bool)
+showbb = input(false, title="Show BBs?", type=bool)
+showhist = input(true, title="Show Histogram?", type=bool)
+offsets = 0.85
+sigmas = 6
+offset = 0.75
+sigma = 4
+ 
+// MFI
+emeefei(_length)=>
+    upper_s = sum(volume * (change(realhlc3) <= 0 ? 0 : realhlc3), _length)
+    lower_s = sum(volume * (change(realhlc3) >= 0 ? 0 : realhlc3), _length)
+    mr = upper_s/lower_s
+    _mf = 100- ( 100/(1+mr))
+mflen = emeefei(fixlen)
+mf1 = emeefei(8)
+mf2 = emeefei(10)
+mf3 = emeefei(12)
+mf4 = emeefei(14)
+mf5 = emeefei(16)
+mf = useavg ? avg(mf1,mf2,mf3,mf4,mf5) : smooth ? alma(mflen, 3, offsets, sigmas) : mflen
+forsig = useavg ? avg(mf1,mf2,mf3,mf4,mf5) : mflen
+//Price condiction
+threshold = alma(realclose, 21, 0.75, 4)
+triggerup = realclose > threshold
+triggerdn = realclose < threshold
+//condition
+buys = triggerup and mf > 40
+sells = triggerdn and mf < 60
+// Draw BB on indices
+bb_s = mf
+basis = alma(bb_s, 21, offset, sigma)
+dev = mult * stdev(bb_s, 21)
+upper = basis + dev
+lower = basis - dev
+plot(showbb ? basis: na, color=#8B008B, title="Trend", transp=0, linewidth=2)
+p1 = plot(showbb ? upper : na, color=#EE00EE, linewidth=2, title="Top", transp=0)
+p2 = plot(showbb ? lower : na, color=#EE00EE, linewidth=2, title="Bottom", transp=0)
+fill(p1,p2, color=#4B0082, transp=70)
+
+b_color = (bb_s > upper) ? red : (bb_s < lower) ? green : na
+breachup = bb_s > upper
+breachdn = bb_s < lower
+bgcolor(buys and showzones ? aqua : na, transp=90, title="Sell Zone")
+bgcolor(sells and showzones ? orange : na, transp=90, title="Buy Zone")
+plot(mf, color=#F0FFF0, linewidth=2, title="MFI", transp=0)
+
+//signal for PPO ONLY!
+calcsig(sigsrc)=>
+    ma1 = alma(sigsrc,5, offsets, sigmas)
+    ma2 = alma(sigsrc,8, offsets, sigmas)
+    ma3 = alma(sigsrc,13, offsets, sigmas)
+    ma4 = alma(sigsrc,21, offsets, sigmas)
+    ma5 = alma(sigsrc,34, offsets, sigmas)
+    _signal = avg(ma1,ma2,ma3,ma4,ma5)
+//end Signal calculation
+mfisig = calcsig(forsig)
+signal = ribsig ? mfisig : alma(mf, siglen, sigma, offset)
+hist = mf - signal
+histcolor = hist > 0 ? green : red
+plot(showbb ? na : signal, color=orange, linewidth=2, title="MFI Signal", transp=0)
+
+plot(showbb ? na : 100, title="Top", color=#7B68EE, transp=0)
+plot(showbb ? na : 80, title="Overbought", color=#7B68EE, transp=50, style=circles)
+plot(showbb ? na : 50, title="Middle", color=#7B68EE, transp=50, style=circles)
+plot(showbb ? na : 20, title="Oversold", color=#7B68EE, transp=50, style=circles)
+plot(showbb ? na : 0, title="Bottom", color=#7B68EE, transp=0)
+
+plotshape(showhits and showbb ? breachup : na, title="Dot mark Up", style=shape.circle, location=location.top, color=b_color, transp=0, size=size.tiny, editable=false)
+plotshape(showhits and showbb ? breachdn : na, title="Dot mark Down", style=shape.circle, location=location.bottom, color=b_color, transp=0, size=size.tiny, editable=false)
+
+plot(showhist and not showbb ? hist : na, style=columns, linewidth=2, transp=0, color=histcolor, title="Histogram")
+
+xoup = crossover(mf,signal)
+xodn = crossunder(mf,signal)
+
+alertcondition(xoup, title='XOUP', message='MFI cross over')
+alertcondition(xodn, title='XODN', message='MFI cross under')

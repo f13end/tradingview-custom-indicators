@@ -1,0 +1,145 @@
+//@version=3
+strategy(title = "XTR SuperTrend ATR Strategy", shorttitle = "[XTR] SuperTrend Strategy", overlay = true, pyramiding=1, default_qty_type=strategy.cash, default_qty_value=150, initial_capital=150, commission_type = strategy.commission.percent, commission_value= 0.25)
+
+// ## Backtest Range Configuration
+FromMonth = input(defval = 1, title = "From Month", minval = 1, maxval = 12)
+FromDay   = input(defval = 1, title = "From Day", minval = 1, maxval = 31)
+FromYear  = input(defval = 2018, title = "From Year", minval = 2017)
+ToMonth   = input(defval = 1, title = "To Month", minval = 1, maxval = 12)
+ToDay     = input(defval = 1, title = "To Day", minval = 1, maxval = 31)
+ToYear    = input(defval = 9999, title = "To Year", minval = 2017)
+
+start     = timestamp(FromYear, FromMonth, FromDay, 00, 00)  
+finish    = timestamp(ToYear, ToMonth, ToDay, 23, 59)        
+window() => time >= start and time <= finish ? true : false 
+
+// ## Trailing Stop configuration
+trailStopPercentage = input(5,"Trailing Stop %")/100
+
+//Mode
+ATR_Factor  = input(title = "Super Trend", defval = 5, minval = 1, maxval = 100)
+ATR_Period  = input(title = "ATR Period", defval=7, minval = 1, maxval = 100)
+// ## Filter input configuration
+useFilter   = input(title = "Use Filter?", defval = true, type = bool)
+maFilter    = input(title = "Filter Type", defval = "MA", options = ["MA", "EMA", "WMA", "RMA", "VWMA"])
+maFilterVal = input(title = "Filter Value (Period of MA)", defval = 100, minval = 1,  maxval = 1000)
+
+// ## Filter function to calulate at which price the current HIGH needs to cross
+// before the filter allows you to trade. 
+// Therefore with MA(close, 100) configured the current HIGH needs to be above the MA
+// to allow long positions, vice versa.
+filter(enable) =>
+    if enable
+        _close = na
+        if maFilter == "MA"
+            _close := sma(close, maFilterVal)
+            
+        if maFilter == "EMA"
+            _close := ema(close, maFilterVal)
+                
+        if maFilter == "WMA"
+            _close := wma(close, maFilterVal)
+                
+        if maFilter == "RMA"
+            _close := rma(close, maFilterVal)
+                
+        if maFilter == "VWMA"
+            _close := vwma(close, maFilterVal)
+        _close
+    else
+        close
+
+// ## Long positions allowed?
+filterLong(enable) =>
+    if not enable
+        true
+    else
+        (high >= filter(enable)) ? true : false
+        
+// ## Short positions allowed?
+filterShort(enable) =>
+    if not enable
+        true
+    else
+        (high <= filter(enable)) ? true : false
+
+// ## Set background color to green if long allowed, red otherwise
+bgcolor(filterLong(useFilter) ? green : red)
+
+// ## Plot filter value (MA, EMA, etc.)
+plot(filter(useFilter), color = green, title ="Filter Plot")
+
+useProxy    = input(title = "Use Proxy?", defval = false, type = bool)
+emaProxyPeriod    = input(title = "EMA Price Proxy Period", defval = 5, minval = 2, maxval = 1000)
+
+proxy(use) =>
+    if use
+        proxyValue    = ema(close, emaProxyPeriod)
+        proxyHigh     = ema(high, emaProxyPeriod)
+        proxyLow      = ema(low, emaProxyPeriod)  
+        [proxyValue, proxyHigh, proxyLow]
+    else
+        [close, high, low]
+
+[_close, _high, _low] = proxy(useProxy)
+
+_hl2 = (_high + _low) / 2
+//Super Trend ATR 
+UpTrend     = _hl2 - (ATR_Factor * atr(ATR_Period))
+DownTrend   = _hl2 + (ATR_Factor * atr(ATR_Period))
+
+TUp     = na
+TDown   = na
+TUp     := (_close[1] > TUp[1])     ? max(UpTrend, TUp[1])        : UpTrend
+TDown   := (_close[1] < TDown[1])   ? min(DownTrend, TDown[1])    : DownTrend
+
+// Determine Trend
+Trend   = na
+Trend   := (_close > TDown[1])    ? 1     : ((_close < TUp[1]) ? -1 : nz(Trend[1],1))
+Tsl     = (Trend == 1)          ? TUp   : TDown
+
+// Functions to determine if we're long/short for the first time since the last order
+// or if we're already long/short
+longSignal(already) =>  
+    if not already
+        ((Trend == 1 and Trend[1] == -1 and window()) and filterLong(useFilter)) ? true : false
+    else
+        ((Trend == 1 and Trend[1] == -1 and window()) or (Trend == 1 and Trend[1] == 1 and window())) and filterLong(useFilter) ? true : false
+    
+shortSignal(already) =>
+    if not already
+        (Trend == -1 and Trend[1] == 1 and window()) ? true : false
+    else
+        ((Trend == -1 and Trend[1] == 1 and window()) or (Trend == -1 and Trend[1] == -1 and window()))  ? true : false
+
+// disable short entries
+strategy.risk.allow_entry_in(strategy.direction.long)
+if longSignal(false)
+    strategy.entry("Long", strategy.long) 
+    //strategy.exit("Trailing Stop", "Long", stop = strategy.position_avg_price - (strategy.position_avg_price * trailStopPercentage)
+
+if shortSignal(false)
+    strategy.entry("Short", strategy.short) 
+
+// ## Correction of the exit order if the current candle high is above our position entry (trailing stop simulation)
+// condition is only true if we're already LONG and the current candle high is above our avg entry
+condition = longSignal(true) and (high > strategy.position_avg_price)
+
+// ## Save the highest price since our last entry position
+highest = na
+highest := (condition) ? max(max(nz(highest[1]), strategy.position_avg_price), high) : (shortSignal(true)) ? strategy.position_avg_price : highest[1]
+trailingStopPrice = highest - (highest * trailStopPercentage)
+
+// ## Plot highest price since last entry
+plot(trailingStopPrice, title="Trailing Stop Price", color=yellow)
+// ## Plot Trailing Stop line
+plot(highest, title="Highes Price Since Going Long", color=green)
+
+// ## Cancel all exit orders, if we're LONG and the current candle high is the highest sinc our last long entry
+strategy.cancel_all(condition)
+// ## Place a new exit order -trailStopPercentage under the high
+strategy.exit("Trailing Stop", "Long", stop = trailingStopPrice, when = condition)
+
+
+
+    

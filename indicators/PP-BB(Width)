@@ -1,0 +1,54 @@
+//@version=3
+//Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+//This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
+//To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+//
+//If you find this work useful please consider making a donation, thank you.
+//
+//Bitcoin: 3F636VrPCdnbfrdP5kS4C6fHWVBffXNKCu
+//Litecoin: 33932ckE7i3oAQZxxSgLcvmbn8RAgTc2tk
+//ETH: 0x53A43EF9E56908A9c868FBf2f1b9DE7B3486FDAF
+//contact: bucket@mailbox.org
+//created by Yield
+
+study(title="%BB and BB Width", shorttitle="%BB/BBW [Yield]", precision=1, overlay=false)
+t = tickerid(syminfo.prefix, ticker)
+src = security(t, period, close)
+showxo = input(false, title="Show crossings?", type=bool)
+bblen = input(21, step=1, title="Channel length")
+bbma = input(true, title="Use ALMA?(SMA)", type=bool)
+showbbw = input(false, title="Show BB Width?", type=bool)
+lenlinreg = input(1, minval=1, step=1, title="LinReg Length")
+offset = input(0.55, step=0.05, minval=0.05, maxval=1.0, title="Offset")
+sigma = input(1, step=1, minval=1, title="Sigma")
+bbcolor = #C0C0C0
+lowblue = #0000CD
+highblue = #00BFFF
+bbwcolor1 = #138484
+
+bb_mid = bbma ? alma(src, bblen, offset, sigma) : sma(src, bblen)
+dev = 2.0 * stdev(src, bblen)
+bb_top = bb_mid + dev
+bb_low = bb_mid - dev
+pbb = 100*((src - bb_low) / (bb_top - bb_low))
+bbw = 100*((bb_top - bb_low)/bb_mid)
+bbwcolor = bbw <= 2.0 ? red : bbw <= 10 ? yellow : bbw <= 20 ? orange : bbwcolor1
+//pbbcolor = pbb <= 20 ? #EE7600 : pbb >= 80 ? #FFC125 : #FFFFF0
+pbbcolor = #FFFFF0
+bullishmid = crossover(pbb, 50)
+bearishmid = crossunder(pbb, 50)
+xobot = crossunder(pbb, 0)
+xotop = crossover(pbb, 100)
+
+fill(plot(80), plot(100), color=#FF4500, transp=75, editable=false)
+fill(plot(20), plot(0), color=#FF4500, transp=75, editable=false)
+hline(0, 'Zero', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+hline(50, 'Half', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+//hline(100, 'One', linestyle=dashed, linewidth=1, color=#7B68EE, editable=false)
+plot(showbbw ? bbw : na, linewidth=4, transp=0, style=histogram, editable=true, color=bbwcolor, title="BB Width", transp=0)
+plot(showbbw ? na : pbb, linewidth=2, transp=0, style=line, editable=true, color=pbbcolor, title="% BB")
+//bgcolor(not showbbw and pbb <= 0 ? red : na, transp=80, editable=false)
+//bgcolor(not showbbw and pbb >= 100 ? yellow : na, transp=80, editable=false)
+
+alertcondition(bbw <= 10, title="BBW 10%", message="Bollinger Bands width is below 10%")
+alertcondition(bbw <= 2.0, title="BBW squeeze!", message="Bollinger Bands width below 2% !!!")
