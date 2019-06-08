@@ -16,6 +16,7 @@
 <br />
 <br />
     <a href="https://github.com/f13end/tradingview-custom-indicators"><strong>Explore the indicators »</strong></a>
+    <br />
     WIP!
 <br />
 
