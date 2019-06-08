@@ -1,8 +1,3 @@
-[![Build Status][build-shield]]()
-[![Contributors][contributors-shield]]()
-[![MIT License][license-shield]][license-url]
-
-
 
 <!-- PROJECT LOGO -->
 <br />
@@ -19,7 +14,6 @@
     <br />
     <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the indicators »</strong></a>
     <br />
-    </p>
 </p>
 
 
