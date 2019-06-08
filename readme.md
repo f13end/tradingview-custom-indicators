@@ -21,8 +21,8 @@
      <br />
      <a href="https://www.youtube.com/watch?v=Kwlxngw1YBY">How To Use Tradingview Pine Script »</a>
      
-    <br />
-    <br />
+   <br />
+   <br />
    WIP!
 <br />
 
