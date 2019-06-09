@@ -25,7 +25,7 @@
     <br />
     <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/strategies"><strong>» Strategies </strong></a>
     <br />
-   
+   <p align="center">
    <a href="https://medium.com/@robswc/how-to-create-custom-tradingview-indicators-with-pinescript-2fb31a66a191">How to create custom Tradingview indicators with Pinescript »</a>
      <br />
      <a href="https://www.youtube.com/watch?v=Kwlxngw1YBY">How To Use Tradingview Pine Script »</a>
@@ -43,7 +43,7 @@
 
 <br />
 <br />
-
+</p>
 <p align="center">
   <a href="#">
     <img src="https://user-images.githubusercontent.com/3318070/59153114-f5a13180-8a41-11e9-881a-71340d5400fb.png" alt="Logo">
