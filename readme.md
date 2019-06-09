@@ -4,12 +4,17 @@
 <p align="center">
  
 
-  <a href="https://github.com/othneildrew/Best-README-Template">
+  <a href="#">
     <img src="https://user-images.githubusercontent.com/3318070/59153114-f5a13180-8a41-11e9-881a-71340d5400fb.png" alt="Logo">
   </a>
-
+  
+  
   <h3 align="center"><strong>TradingView Custom Indicators</strong></h3>
-
+  <br />
+  <br />
+<a href="#">
+    <img src="https://user-images.githubusercontent.com/3318070/59157395-5dcf3200-8a99-11e9-96d4-a70e29062173.jpg" alt="Logo">
+  </a>
   <p align="center">
     An awesome collection of the various technical indicators implemented in Pine Script Language.
   
