@@ -29,7 +29,7 @@
     <br />
    <strong>Script Authors »</strong>
    
-    PhilWorld <strong>Phil Ledru</strong> | foorbar Yield | Alebuser | Deca | Everget Alex Orekhov | Twitchy-Overpass | Xtrcode | pinescripts Jaqobs | robswc Rob
+    PhilWorld - Phil Ledru | foorbar - Yield | Alebuser | Deca | Everget - Alex Orekhov | Twitchy-Overpass | Xtrcode | pinescripts - Jaqobs | robswc - Rob
 <br />
 
 
