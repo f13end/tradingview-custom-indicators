@@ -26,11 +26,10 @@
    WIP!
    <br />
     <br />
+       <br />
+<br />
+<br />
    <strong>Script Authors »</strong>
-   <br />
-<br />
-<br />
-   
     PhilWorld - Phil Ledru | foorbar - Yield | Alebuser | Deca | Everget - Alex Orekhov | Twitchy-Overpass | Xtrcode | pinescripts - Jaqobs | robswc - Rob
 
 <br />
