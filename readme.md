@@ -25,6 +25,7 @@
     <br />
     <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/strategies"><strong>» Strategies </strong></a>
     <br />
+    <br />
    <p align="center">
    <a href="https://medium.com/@robswc/how-to-create-custom-tradingview-indicators-with-pinescript-2fb31a66a191">How to create custom Tradingview indicators with Pinescript »</a>
      <br />
