@@ -51,12 +51,13 @@
 <br />
 <br />
 
+<p align="center">
+
 This github repo is for educational purposes only.
-
-Fair Use
-
+<br />
+<strong><br /> Fair Use </strong><br />
 Copyright Disclaimer under section 107 of the Copyright Act of 1976, allowance is made for “fair use” for purposes such as criticism, comment, news reporting, teaching, scholarship, education and research.
-
+</p>
 
 </p>
 <p align="center">
