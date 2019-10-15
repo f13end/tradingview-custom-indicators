@@ -32,7 +32,9 @@
      <br />
      <a href="https://www.youtube.com/watch?v=Kwlxngw1YBY">How To Use Tradingview Pine Script »</a>
     <br />
-    <a href="https://www.youtube.com/playlist?list=PLUseeqY5qQGXLsmK6FRH6yjkcg54a-d1U">Pine Script Tutorials <b>(Youtube videos)</b> »</a>
+    <a href="https://www.youtube.com/playlist?list=PLUseeqY5qQGXLsmK6FRH6yjkcg54a-d1U">Pine Script Tutorials <b>(Youtube videos) »</a>
+      <br />
+    <a href="https://coinciyiz.com/10-dakikada-kendi-ticaret-botunuzu-nasil-yazarsiniz/"> Turkish Content: 10 Dakikada Kendi Ticaret Botunuzu Nasıl Yazarsınız?</b> »</a>
     
      
    <br />
