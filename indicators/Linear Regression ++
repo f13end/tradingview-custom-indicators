@@ -1,0 +1,54 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © LucemAnb
+// User Version
+
+//@version=4
+study("Linear Regression ++", "Lin Reg ++", overlay=true)
+
+
+source      = input(close)
+length      = input(100, minval=1)
+offset      = input(0, minval=0)
+dev         = input(2.0, "Deviation")
+smoothing   = input(1, minval=1)
+mtf_val     = input("", "Resolution", input.resolution)
+line_thick  = input(4, "Line Thickness", input.integer, minval=1, maxval=4)
+p           = input("Lime", "Up Color", options=["Red", "Lime", "Orange", "Teal", "Yellow", "White", "Black"])
+q           = input("Red", "Down Color", options=["Red", "Lime", "Orange", "Teal", "Yellow", "White", "Black"])
+
+cc(x) => x=="Red"?color.red:x=="Lime"?color.lime:x=="Orange"?color.orange:x=="Teal"?
+ color.teal:x=="Yellow"?color.yellow:x=="Black"?color.black:color.white
+data(x) => sma(security(syminfo.tickerid, mtf_val!="" ? mtf_val : timeframe.period, x), smoothing)
+
+linreg = data(linreg(source, length, offset))
+linreg_p = data(linreg(source, length, offset+1))
+plot(linreg, "Regression Line", cc(linreg>linreg[1]?p:q))
+
+x = bar_index
+slope = linreg - linreg_p
+intercept = linreg - x*slope
+deviationSum = 0.0
+for i=0 to length-1
+    deviationSum:= deviationSum + pow(source[i]-(slope*(x-i)+intercept), 2)  
+deviation = sqrt(deviationSum/(length))
+x1 = x-length
+x2 = x
+y1 = slope*(x-length)+intercept
+y2 = linreg
+line b = line.new(x1, y1, x2, y2, xloc.bar_index, extend.right, color.aqua, width=line_thick)
+line.delete(b[1])
+line dp = line.new(x1, deviation*dev + y1, x2, deviation*dev + y2, xloc.bar_index, extend.right, cc(q), width=line_thick)
+line.delete(dp[1])
+line dm = line.new(x1, -deviation*dev + y1, x2, -deviation*dev + y2, xloc.bar_index, extend.right, cc(p), width=line_thick)
+line.delete(dm[1])
+
+dm_current = -deviation*dev + y2
+dp_current = deviation*dev + y2
+buy = crossunder(close, dm_current)
+sell = crossover(close, dp_current)
+alertcondition(buy, "Buy Lin Reg", "Crossing On the Lower Regression Channel")
+alertcondition(sell, "Sell Lin Reg", "Crossing On the Higher Regression Channel")
+
+plotshape(buy, "BUY", shape.labelup, location.belowbar, color.lime, text='BUY', textcolor=color.black, show_last=length)
+plotshape(sell, "SELL", shape.labeldown, location.abovebar, color.red, text='SELL', textcolor=color.white, show_last=length)
+    
