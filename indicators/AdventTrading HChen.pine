@@ -1,0 +1,259 @@
+//@version=2
+//@Author: AdventTrading HChen
+
+//This indicator was made to allow three moving averages to be displayed without needing to use up 3 charting indicators individually
+
+study(title="Colored EMA", shorttitle="CEMA", overlay=true)
+
+// Checkbox's for the other 3 MA's
+a1 = input(true, title="Enable 1sd EMA")
+a = input(true, title="Enable 2nd EMA")
+b = input(true, title="Enable 3rd EMA")
+c = input(false, title="Enable 4th EMA")
+d = input(true, title="Enable 1st SMA")
+e = input(true, title="Enable 2nd SMA")
+f = input(false, title="Enable 3rd SMA")
+g = input(true, title="Enable 5 period SMA")
+h = input(true, title="Enable 10 period SMA")
+
+len1 = input(3, minval=1, title="Length1")
+len2 = input(8, minval=1, title="Length2")
+len3 = input(20, minval=1, title="Length3")
+len4 = input(50, minval=1, title="Length4")
+len5 = input(20, minval=1, title="Length5")
+len6 = input(100, minval=1, title="Length6")
+len7 = input(200, minval=1, title="Length7")
+len8 = input(5, minval=1, title="Length8")
+len9 = input(10, minval=1, title="Length9")
+
+src1 = input(close, title="Source1")
+src2 = input(close, title="Source2")
+src3 = input(close, title="Source3")
+src4 = input(close, title="Source4")
+src5 = input(close, title="Source5")
+src6 = input(close, title="Source6")
+src7 = input(close, title="Source7")
+src8 = input(close, title="Source8")
+src9 = input(close, title="Source9")
+
+out1 = ema(src1, len1)
+out2 = ema(src2, len2)
+out3 = ema(src3, len3)
+out4 = ema(src4, len4)
+out5 = sma(src5, len5)
+out6 = sma(src6, len6)
+out7 = sma(src7, len7)
+out8 = sma(src8, len8)
+out9 = sma(src9, len9)
+
+up1 = out1 > out1[1]
+down1 = out1 < out1[1]
+up2 = out2 > out2[1]
+down2 = out2 < out2[1]
+up3 = out3 > out3[1]
+down3 = out3 < out3[1]
+up4 = out4 > out4[1]
+down4 = out4 < out4[1]
+up5 = out5 > out5[1]
+down5 = out5 < out5[1]
+up6 = out6 > out6[1]
+down6 = out6 < out6[1]
+up7 = out7 > out7[1]
+down7 = out7 < out7[1]
+up8 = out8 > out8[1]
+down8 = out8 < out8[1]
+up9 = out9 > out9[1]
+down9 = out9 < out9[1]
+
+mycolor1 = up1 ? green : down1 ? green : green
+mycolor2 = up2 ? red : down2 ? red : red
+mycolor3 = up3 ? maroon : down3 ? maroon : maroon
+mycolor4 = up4 ? orange : down4 ? orange : orange
+mycolor5 = up5 ? blue : down5 ? blue : blue
+mycolor6 = up6 ? purple : down6 ? purple : purple
+mycolor7 = up7 ? black : down7 ? black : black
+mycolor8 = up8 ? green : down8 ? green : green
+mycolor9 = up9 ? red : down9 ? red : red
+
+//plot(out1, title="EMA1", color=mycolor1, linewidth=2)
+plot(a1 and out1 ? out1: na, title="EMA1", color=mycolor1, linewidth=2)
+plot(a and out2 ? out2: na, title="EMA2", color=mycolor2, linewidth=2)
+plot(b and out3 ? out3: na, title="EMA3", color=mycolor3, linewidth=2)
+plot(c and out4 ? out4: na, title="EMA4", color=mycolor4, linewidth=2)
+plot(d and out5 ? out5: na, title="SMA1", color=mycolor5, linewidth=2)
+plot(e and out6 ? out6: na, title="SMA2", color=mycolor6, linewidth=1)
+plot(f and out7 ? out7: na, title="SMA3", color=mycolor7, linewidth=1)
+plot(g and out8 ? out8: na, title="SMA4", color=mycolor8, linewidth=2, style=circles)
+plot(h and out9 ? out9: na, title="SMA5", color=mycolor9, linewidth=2, style=circles)
+
+
+//strategy("MovingAvg2Line Cross", overlay=true)
+//strategy.risk.allow_entry_in(strategy.direction.short) // There will be no short entries, only exits from long.
+
+fastLength = input(3)
+slowLength = input(8)
+price = close
+
+mafast = ema(price, fastLength)
+maslow = ema(price, slowLength)
+ema38buy_sig = crossover(mafast,maslow)
+ema38sell_sig=crossover(maslow,mafast)
+plotshape(ema38buy_sig,style=shape.labelup, color=blue,location = location.belowbar)
+plotshape(ema38sell_sig,style=shape.labeldown,color=blue)
+
+
+//sma 5/10 cross
+show510 = input(false, title="Display 5/10 sma cross?")
+sma5 = sma(close,5)
+sma10 = sma(close,10)
+sma510_buy=crossover(sma5,sma10)
+sma510_sell = crossover(sma10,sma5)
+
+plotshape(show510 and sma510_buy ? sma510_buy: na,style=shape.diamond, color=teal,location = location.belowbar)
+plotshape(show510 and sma510_sell ? sma510_sell: na,style=shape.diamond,color=purple)
+
+//sma 10/20 cross
+show1020 = input(false, title="Display 10/20 sma cross?")
+sma20 = sma(close,20)
+sma1020_buy=crossover(sma10,sma20)
+sma1020_sell = crossover(sma20,sma10)
+
+plotshape(show1020 and sma1020_buy ? sma1020_buy: na,style=shape.arrowup, color=black,location = location.belowbar)
+plotshape(show1020 and sma1020_sell ? sma1020_sell: na,style=shape.arrowdown,color=black)
+
+//if (crossover(mafast, maslow))
+ //   strategy.entry("MA2CrossLE", strategy.long, comment="L")
+
+//if (crossunder(mafast, maslow))
+ //   strategy.entry("MA2CrossSE", strategy.short, comment="S")
+    
+//SMA 20 cross
+sma20_buy=crossover(close,sma20)
+sma20_sell=crossover(sma20,close)
+plotshape(sma20_buy,style=shape.labelup, color=red,location = location.belowbar)
+plotshape(sma20_sell,style=shape.labeldown,color=red)
+
+//sma18 = ema(close, 18)
+
+[macdLine, signalLine, histLine] = macd(close, 6, 13, 5)
+// macd signals
+macd_sell_sig = crossover(signalLine,macdLine)
+macd_buy_sig = crossover(macdLine, signalLine)
+plotshape(macd_sell_sig, style=shape.xcross, color=red)
+plotshape(macd_buy_sig, style=shape.xcross, color=green)
+//plot(sma18, title="sma18", color=white)
+
+// enter long by market if macd crossed up
+//if(sma18 < high)
+//    strategy.order("buy", strategy.long,  when = macd_buy_sig, comment="ML")
+//    if(not macd_buy_sig[1])
+//        strategy.order("sell", strategy.short, when = macd_sell_sig and (strategy.position_size > 0),comment="MS")
+
+
+//vwap
+//@version=3
+//study("My sma", overlay=true)
+//my_sma(price, length) =>
+//	uvol = volume
+//	uprc = close
+//	uwgt = volume*close
+//	for i = 1 to length-1
+//	    uvol := uvol + volume[i]
+//		uwgt := uwgt + volume[i]*close[i]
+//	uwgt / uvol
+//plot(my_sma(close,10),style=circles,color=blue)
+//plot(my_sma(close,30),style=circles,color=blue)
+
+//devUp1 = input(2, title="Stdev above (1)")
+//devDn1 = input(2, title="Stdev below (1)")
+
+//devUp2 = input(1.28, title="Stdev above (2)")
+//devDn2 = input(1.28, title="Stdev below (2)")
+
+//devUp3 = input(3.09, title="Stdev above (3)")
+//devDn3 = input(3.09, title="Stdev below (3)")
+
+//showDv2 = input(false, type=bool, title="Show second group of bands?")
+//showDv3 = input(false, type=bool, title="Show third group of bands?")
+
+//showPrevVWAP = input(false, type=bool, title="Show previous VWAP close")
+
+start = security(tickerid, "D", time)
+
+newSession = iff(change(start), 1, 0)
+
+vwapsum = iff(newSession, hl2*volume, vwapsum[1]+hl2*volume)
+volumesum = iff(newSession, volume, volumesum[1]+volume)
+v2sum = iff(newSession, volume*hl2*hl2, v2sum[1]+volume*hl2*hl2)
+myvwap = vwapsum/volumesum
+dev = sqrt(max(v2sum/volumesum - myvwap*myvwap, 0))
+
+plot(myvwap, title="VWAP", color=blue, style = circles, linewidth = 2)
+//plot(myvwap + devUp1 * dev, title="VWAP Upper", color=red)
+//plot(myvwap - devDn1 * dev, title="VWAP Lower", color=red)
+
+//plot(showDv2 ? myvwap + devUp2 * dev : na, title="VWAP Upper (2)")
+//plot(showDv2 ? myvwap - devDn2 * dev : na, title="VWAP Lower (2)")
+
+//plot(showDv3 ? myvwap + devUp3 * dev : na, title="VWAP Upper (3)", color=teal)
+//plot(showDv3 ? myvwap - devDn3 * dev : na, title="VWAP Lower (3)", color=teal)
+
+//prevwap = iff(newSession, myvwap[1], prevwap[1])
+//plot(showPrevVWAP ? prevwap : na, style=circles, color=close > prevwap ? green : red)
+
+
+//candle patterns
+data2=(close[2] > open[2] and min(open[1], close[1]) > close[2] and open < min(open[1], close[1]) and close < open )
+plotshape(data2, title= "Evening Star", color=red, style=shape.triangledown)
+
+data3=(close[2] < open[2] and max(open[1], close[1]) < close[2] and open > max(open[1], close[1]) and close > open )
+plotshape(data3,  title= "Morning Star", location=location.belowbar, color=lime, style=shape.triangleup)
+
+data8=(close[1] > open[1] and open > close and open >= close[1] and open[1] >= close and open - close > close[1] - open[1] )
+plotshape(data8,  title= "Bearish Engulfing", color=maroon, style=shape.flag)
+
+data9=(open[1] > close[1] and close > open and close >= open[1] and close[1] >= open and close - open > open[1] - close[1] )
+plotshape(data9, title= "Bullish Engulfing", location=location.belowbar, color=olive, style=shape.flag)
+
+//rsi14 = rsi(close,14)
+//data20=(open[1]>open[2] and close[1]>close[2]  and close[2]>open[2] and close[1]>open[1] and open>open[1] and close<close[1] and close > open)
+//data20=close[1]>open[1] and open>open[1] and close<close[1] and ((close > open) or (open-close)/(high-low)<=0.2)
+data20=close[1]>open[1] and open>open[1] and close<close[1] and close > open 
+plotshape(data20, title= "Bull W Soldiers", location=location.belowbar, color=olive, style=shape.square)
+
+///////////// Bollinger Bands
+BBlength = input(20, minval=1,title="Bollinger Period Length")
+BBmult = 2 // input(2.0, minval=0.001, maxval=50,title="Bollinger Bands Standard Deviation")
+BBbasis = sma(price, BBlength)
+BBdev = BBmult * stdev(price, BBlength)
+BBupper = BBbasis + BBdev
+BBlower = BBbasis - BBdev
+plot(BBbasis, color=blue,title="Middle BB", linewidth=2)
+plot(BBupper, color=blue,title="Upper BB")
+plot(BBlower, color=blue,title="Lower BB")
+//fill(p1, p2)
+
+//ichimoku
+conversionPeriods = input(9, minval=1, title="Conversion Line Periods"),
+basePeriods = input(26, minval=1, title="Base Line Periods")
+laggingSpan2Periods = input(52, minval=1, title="Lagging Span 2 Periods"),
+displacement = input(26, minval=1, title="Displacement")
+
+donchian(len) => avg(lowest(len), highest(len))
+
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = avg(conversionLine, baseLine)
+leadLine2 = donchian(laggingSpan2Periods)
+
+//plot(conversionLine, color=#0496ff, title="Conversion Line")
+//plot(baseLine, color=#991515, title="Base Line")
+plot(close, offset = -displacement, color=#459915, title="Lagging Span")
+
+p1 = plot(leadLine1, offset = displacement, color=green,
+ title="Lead 1")
+p2 = plot(leadLine2, offset = displacement, color=red, 
+ title="Lead 2")
+fill(p1, p2, color = leadLine1 > leadLine2 ? green : red)
+
+
