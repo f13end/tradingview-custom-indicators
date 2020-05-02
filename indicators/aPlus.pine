@@ -1,0 +1,133 @@
+//@version=3
+study("A PLUS B", overlay=true)
+ 
+sure = input(false, title="destek/direnç?")
+fb = input(true, title="fibonacci?")
+malar = input(true, title="malar?")
+emalar = input(true, title="emalar?")
+ichimoku = input(true, title="ichimoku?")
+smabolinger= input(false, title="smabolinger?")
+
+ 
+left = 50
+right = 25
+quick_right = 5 // Used to try and detect a more recent significant swing.
+ 
+pivot_high = pivothigh(high,left,right)
+pivot_lows = pivotlow(low, left,right)
+ 
+quick_pivot_high = pivothigh(high,left,quick_right)
+quick_pivot_lows = pivotlow(low, left,quick_right)
+ 
+level1 = valuewhen(quick_pivot_high, high[quick_right], 0)
+level2 = valuewhen(quick_pivot_lows, low[quick_right], 0)
+level3 = valuewhen(pivot_high, high[right], 0)
+level4 = valuewhen(pivot_lows, low[right], 0)
+level5 = valuewhen(pivot_high, high[right], 1)
+level6 = valuewhen(pivot_lows, low[right], 1)
+level7 = valuewhen(pivot_high, high[right], 2)
+level8 = valuewhen(pivot_lows, low[right], 2)
+ 
+level1_col = close >= level1 ? green : red
+level2_col = close >= level2 ? green : red
+level3_col = close >= level3 ? green : red
+level4_col = close >= level4 ? green : red
+level5_col = close >= level5 ? green : red
+level6_col = close >= level6 ? green : red
+level7_col = close >= level7 ? green : red
+level8_col = close >= level8 ? green : red
+ 
+plot(sure and level1 ? level1 : na , style=circles, color=level1_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level2 ? level2 : na , style=circles, color=level2_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level3 ? level3 : na , style=circles, color=level3_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level4 ? level4 : na , style=circles, color=level4_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level5 ? level5 : na , style=circles, color=level5_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level6 ? level6 : na , style=circles, color=level6_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level7 ? level7 : na , style=circles, color=level7_col, show_last=1, linewidth=1, trackprice=true)
+plot(sure and level8 ? level8 : na , style=circles, color=level8_col, show_last=1, linewidth=1, trackprice=true)
+
+
+FPeriod = input(100, title="Fibo Period")
+
+
+Fhigh=highest(FPeriod)
+Flow=lowest(FPeriod)
+FH=highestbars(high,FPeriod)
+FL=lowestbars(low,FPeriod)
+downfibo = FH < FL
+
+F0 = downfibo ? Flow : Fhigh
+F236 = downfibo ? (Fhigh-Flow)*0.236+Flow : Fhigh-(Fhigh-Flow)*0.236
+F382 = downfibo ? (Fhigh-Flow)*0.382+Flow : Fhigh-(Fhigh-Flow)*0.382
+F500 = downfibo ? (Fhigh-Flow)*0.500+Flow : Fhigh-(Fhigh-Flow)*0.500
+F618 = downfibo ? (Fhigh-Flow)*0.618+Flow : Fhigh-(Fhigh-Flow)*0.618
+F786 = downfibo ? (Fhigh-Flow)*0.786+Flow : Fhigh-(Fhigh-Flow)*0.786
+F1000 = downfibo ? (Fhigh-Flow)*1.000+Flow : Fhigh-(Fhigh-Flow)*1.000
+
+
+Fcolor = downfibo ? #4a9b4a : #a03e42
+Foffset = downfibo ? FH : FL
+
+plot(fb and F0 ? F0 : na ,color=Fcolor,linewidth=2,trackprice=true,show_last=1,title='0',transp=0)
+plot(fb and F236 ? F236 : na ,color=Fcolor,linewidth=1,trackprice=true,show_last=1,title='0.236',transp=0)
+plot(fb and F382 ? F382 : na ,color=Fcolor,linewidth=1,trackprice=true,show_last=1,title='0.382',transp=0)
+plot(fb and F500 ? F500 : na ,color=Fcolor,linewidth=2,trackprice=true,show_last=1,title='0.5',transp=0)
+plot(fb and F618 ? F618 : na ,color=Fcolor,linewidth=1,trackprice=true,show_last=1,title='0.618',transp=0)
+plot(fb and F786 ? F786 : na ,color=Fcolor,linewidth=1,trackprice=true,show_last=1,title='0.786',transp=0)
+plot(fb and F1000 ? F1000 : na,color=Fcolor,linewidth=2,trackprice=true,show_last=1,title='1',transp=0)
+
+
+plotshape(fb and F0 ? F0 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%0",offset = 15,transp=30)
+plotshape(fb and F236 ? F236 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%23.6",offset = 15,transp=30)
+plotshape(fb and F382 ? F382 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%38.2",offset = 15,transp=30)
+plotshape(fb and F500 ? F500 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%50",offset = 15,transp=30)
+plotshape(fb and F618 ? F618 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%61.8",offset = 15,transp=30)
+plotshape(fb and F786 ? F786 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%78.6",offset = 15,transp=30)
+plotshape(fb and F1000 ? F1000 : na ,style=shape.labeldown,location=location.absolute,color=Fcolor,textcolor=black,show_last=1,text="%100",offset = 15,transp=30)
+
+
+ma20=sma(close,20)
+plot(malar and ma20 ? ma20 : na, color=green, linewidth=2, title="ma20")
+ma50=sma(close,50)
+plot(malar and ma50 ? ma50 : na, color=aqua, linewidth=2, title="ma50")
+ma100=sma(close,100)
+plot(malar and ma100 ? ma100 : na, color=orange, linewidth=1, title="ma100")
+ma200=sma(close,200)
+plot(malar and ma200 ? ma200 : na, color=fuchsia, linewidth=2, title="ma200")
+
+ema9=ema(close,9)
+plot(emalar and ema9 ? ema9 : na, color=blue, linewidth=2, title="ema9")
+ema21=ema(close,21)
+plot(emalar and ema21 ? ema21 : na, color=red, linewidth=1, title="ema21")
+ema55=ema(close,55)
+plot(emalar and ema55 ? ema55 : na, color=lime, linewidth=2, title="ema55")
+ema89=ema(close,89)
+plot(emalar and ema89 ? ema89 : na, color=#9c27b0, linewidth=1, title="ema89")
+ema144=ema(close,144)
+plot(emalar and ema144 ? ema144 : na, color=black, linewidth=2, title="ema144")
+ema233=ema(close,233)
+plot(emalar and ema233 ? ema233 : na, color=maroon, linewidth=1, title="ema233")
+
+TK=avg(lowest(9), highest(9))
+KJ=avg(lowest(26), highest(26))
+CS=close
+SB=avg(lowest(52), highest(52))
+SA=avg(TK,KJ)
+
+plot(ichimoku and TK ? TK : na, linewidth=2, color=blue, title="TenkanSen")
+plot(ichimoku and KJ ? KJ : na, linewidth=2, color=red, title="KijunSen")
+
+plot(ichimoku and CS ? CS : na, offset=-26, linewidth=2, color=#DDA0DD, title="ChikouSpan")
+
+SenkouA=plot(ichimoku and SA ? SA : na, offset=26,  linewidth=1, color=green, title="SenkouSpanA")
+SenkouB=plot(ichimoku and SB ? SB : na, offset=26, linewidth=1, color=purple, title="SenkouSpanB")
+
+fill(SenkouA, SenkouB, color = SA > SB ? green : red)
+
+basis = sma(close,20)
+dev = 2 * stdev(close, 20)
+upper = basis + dev
+lower = basis - dev
+plot(smabolinger and basis ? basis : na, color = #cc37e6, linewidth = 1, title = "bb")
+plot(smabolinger and upper ? upper : na, color = #cc37e6, linewidth = 1, title = "bb")
+plot(smabolinger and lower ? lower : na, color = #cc37e6, linewidth = 1, title = "bb")
