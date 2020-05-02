@@ -50,7 +50,7 @@
 <br />
    <strong>« Script Authors »</strong><br />
     PhilWorld - Phil Ledru | foorbar - Yield | Alebuser | Deca | Everget - Alex Orekhov <br />
-    Twitchy-Overpass | Xtrcode | pinescripts - Jaqobs | robswc - Rob
+    Twitchy-Overpass | Xtrcode | pinescripts - Jaqobs | robswc - Rob | kivancozbilgic
 
 <br />
 <br />
