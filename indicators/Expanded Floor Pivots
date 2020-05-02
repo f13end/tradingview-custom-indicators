@@ -1,0 +1,107 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © LonesomeTheBlue
+
+//@version=4
+study("Expanded Floor Pivots", overlay = true)
+mode =input(title = "HTF Method", defval = 'Auto', options=['Auto', 'User Defined'])
+HTFm = input('D', title = "Time Frame (if HTF Method=User Defined)", type=input.resolution)
+showlast = input(title = "Show Only Last Period", defval = true)
+showlabels = input(title = "Show Labels", defval = true)
+lstyle = input(title = "Line Style", options = ['Solid', 'Circles', 'Cross'], defval ='Solid')
+ 
+//auto higher time frame
+HTFo =timeframe.period == '1' ? '30' : 
+  timeframe.period == '3' ? '60' : 
+  timeframe.period == '5' ? '240' : 
+  timeframe.period == '15' ? 'D' : 
+  timeframe.period == '30' ? 'D' : 
+  timeframe.period == '45' ? 'D' : 
+  timeframe.period == '60' ? 'D' : 
+  timeframe.period == '120' ? 'D' : 
+  timeframe.period == '180' ? 'D' : 
+  timeframe.period == '240' ? 'D' : 
+  timeframe.period == 'D' ? 'W' :
+  '5W'
+  
+HTF = mode == 'Auto' ? HTFo : HTFm
+    
+highhtf = security(syminfo.tickerid, HTF, high[1], lookahead = barmerge.lookahead_on)
+lowhtf = security(syminfo.tickerid, HTF, low[1], lookahead = barmerge.lookahead_on)
+closehtf = security(syminfo.tickerid, HTF, close[1], lookahead = barmerge.lookahead_on)
+
+// is this last bar for HTF?
+islast = showlast ? security(syminfo.tickerid, HTF, barstate.islast, lookahead = true) : true
+
+// Line Style
+linestyle = lstyle == 'Solid' ? plot.style_line :
+   lstyle == 'Circle' ? plot.style_circles : plot.style_cross
+
+pivot = (highhtf + lowhtf + closehtf) / 3
+bc = (highhtf + lowhtf) / 2
+tc = (pivot - bc) + pivot
+r1 = 2 * pivot - lowhtf
+r2 = pivot + (highhtf - lowhtf)
+r3 = r1 + (highhtf - lowhtf)
+r4 = r3 + (r2 - r1)
+s1 = 2 * pivot - highhtf
+s2 = pivot - (highhtf - lowhtf)
+s3 = s1 - (highhtf - lowhtf)
+s4 = s3 - (s1 - s2)
+
+plot(islast ? pivot : na, color = color.blue, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? r1 : na, title = "R1", color = color.red, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? r2 : na, title = "R2", color = color.red, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? r3 : na, title = "R3", color = color.red, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? r4 : na, title = "R4", color = color.red, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? s1 : na, title = "S1", color = color.lime, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? s2 : na, title = "S2", color = color.lime, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? s3 : na, title = "S3", color = color.lime, linewidth = 1, style = linestyle, transp = 0)
+plot(islast ? s4 : na, title = "S4", color = color.lime, linewidth = 1, style = linestyle, transp = 0)
+tcline = plot(islast ? tc : na, title = "TC", color = color.blue, linewidth = 1, style = plot.style_line, transp = 50)
+bcline = plot(islast ? bc : na, title = "BC", color = color.blue, linewidth = 1, style = plot.style_line, transp = 50)
+fill(tcline, bcline, color = color.blue, transp = 70)
+
+// Label for S/R
+chper = time - time[1]
+chper := change(chper) > 0 ? chper[1] : chper
+
+Round_it(valu)=>
+    a = 0
+    num = syminfo.mintick
+    s = valu
+    if na(s)
+        s := syminfo.mintick
+    if num < 1
+        for i = 1 to 20
+            num := num * 10
+            if num > 1
+                break
+            a := a +1
+    
+    for x = 1 to a 
+        s := s * 10
+    s := round(s)
+    for x = 1 to a
+        s := s / 10
+    s := s < syminfo.mintick  ? syminfo.mintick : s
+    s
+
+// Labels
+if showlabels
+    var label plabel = na 
+    var label s1label = na, var label s2label = na, var label s3label = na, var label s4label = na
+    var label r1label = na, var label r2label = na, var label r3label = na, var label r4label = na
+    
+    label.delete(plabel)
+    label.delete(s1label), label.delete(s2label), label.delete(s3label), label.delete(s4label)
+    label.delete(r1label), label.delete(r2label), label.delete(r3label), label.delete(r4label)
+    plabel := label.new(x = time + chper * 20, y = pivot, text = tostring(Round_it(pivot)), color = color.blue, textcolor=color.black, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price) 
+    s1label := label.new(x = time + chper * 20, y = s1, text = tostring(Round_it(s1)), color = color.lime, textcolor=color.black, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    s2label := label.new(x = time + chper * 20, y = s2, text = tostring(Round_it(s2)), color = color.lime, textcolor=color.black, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    s3label := label.new(x = time + chper * 20, y = s3, text = tostring(Round_it(s3)), color = color.lime, textcolor=color.black, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    s4label := label.new(x = time + chper * 20, y = s4, text = tostring(Round_it(s4)), color = color.lime, textcolor=color.black, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    r1label := label.new(x = time + chper * 20, y = r1, text = tostring(Round_it(r1)), color = color.red, textcolor=color.white, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    r2label := label.new(x = time + chper * 20, y = r2, text = tostring(Round_it(r2)), color = color.red, textcolor=color.white, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    r3label := label.new(x = time + chper * 20, y = r3, text = tostring(Round_it(r3)), color = color.red, textcolor=color.white, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+    r4label := label.new(x = time + chper * 20, y = r4, text = tostring(Round_it(r4)), color = color.red, textcolor=color.white, style=label.style_labeldown, xloc = xloc.bar_time, yloc=yloc.price)
+
