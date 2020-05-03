@@ -20,6 +20,8 @@
       <br />
       <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/channels"><strong>» Channels </strong></a>
     <br />
+     <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/indicators"><strong>» Indicators </strong></a>
+    <br />
      <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/movings"><strong>» Movings </strong></a>
     <br />
      <a href="https://github.com/f13end/tradingview-custom-indicators/tree/master/oscillators"><strong>» Oscillators </strong></a>
