@@ -1,0 +1,57 @@
+//@version=3
+// Step 1. Script settings
+study(title="Donchian Channel", overlay=true)
+
+// Channel settings
+dcLen = input(title="Channel Length", type=integer, defval=20, minval=2)
+
+// Visual settings
+showMid = input(title="Show Midpoint Line?", type=bool, defval=false)
+fillDc  = input(title="Fill Donchian Channel?", type=bool, defval=false)
+
+// Signal settings
+brkOutFilter = input(title="Breakout Filter (Ticks)", type=integer,
+     defval=0, minval=0) * syminfo.mintick
+
+showBreakouts = input(title="Highlight Breakouts?", type=bool, defval=true)
+
+// Step 2. Calculate indicator values
+hiHighs = highest(high, dcLen)[1]
+loLows  = lowest(low, dcLen)[1]
+
+midPoint = (hiHighs + loLows) / 2
+
+// Step 3. Determine indicator signals
+// See if prices crossed above/below Donchian Channel
+upBrkOut = barstate.isconfirmed and crossover(close, hiHighs + brkOutFilter)
+
+downBrkOut = barstate.isconfirmed and crossunder(close, loLows - brkOutFilter)
+
+// Step 4. Output indicator data
+// Plot Donchian Channel
+ub = plot(series=hiHighs, color=green, title="DoCh UB")
+lb = plot(series=loLows, color=red, title="DoCh LB")
+
+// Fill background between Donchian bands
+fill(plot1=ub, plot2=lb,
+     color=fillDc ? color(#4169e1, 95) : color(white, 100))
+
+// Show midpoint line, when enabled
+plot(series=showMid ? midPoint : na, color=orange, title="DoCh Mid")
+
+// Highlight breakouts with a coloured background
+highlightColour = not showBreakouts ? na :
+     upBrkOut ? green :
+     downBrkOut ? red :
+     na
+
+bgcolor(color=highlightColour)
+
+// Step 5. Create indicator alerts
+alertcondition(condition=upBrkOut,
+     title="Long Entry",
+     message="Price closed above Donchian Channel")
+
+alertcondition(condition=downBrkOut,
+     title="Short Entry",
+     message="Price closed below Donchian Channel")
