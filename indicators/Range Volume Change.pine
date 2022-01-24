@@ -1,0 +1,64 @@
+// This work is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License https://creativecommons.org/licenses/by-sa/4.0/
+// © dman103
+//@version=5
+// I was looking for a way to see if today's premarket volume is higher or lower than the previous day's premarket, did not find any, hence, I made my own in which I share with you now.
+// I call it 'Range Volume Change' or just RVC.
+// RVC will show the percentage of change between the selected time range and the previous day for the same time range. As an extra feature, it will also show the volume percentage of change outside the time range (can be disabled from settings).
+// This will allow us to see if the volume is increasing or decreasing today compare to the previous day in this specific time range.
+// Can be used for various things, like checking premarket volume compare to the previous day or checking specific time range of your interest to see if volume is increasing or decreasing compare to the previous day.
+// Also, RVC visualizes the incremental of the volume using increasing size columns giving you a better view of how the volume changes compared to the past.
+// in addition, RVC is also designed to work on real-time data.
+// Follow for more top indicators/strategies: https://www.tradingview.com/u/dman103/#published-scripts
+
+indicator('Range Volume Change', 'RVC', overlay=false)
+time_range_input = input.session('0400-0930', 'Time Range',tooltip="The time range to show the volume percentage of change between current day time range and previous day for the same time range.")
+show_volume_range_between_time_range= input.bool(true,'Show volume change between time range',tooltip="In addtion to the volume on the time range, it will also display volume percetnage of change OUTSIDE the time range.")
+is_time_range = time(timeframe.period, time_range_input + ':1234567')
+tf = is_time_range ? 1 : 0  //1 in time range
+varip pre_volume = volume
+varip pre_v2 = volume
+varip pre_v3 = volume
+varip session_volume = 0.
+varip session_v2 = volume
+varip session_v3 = volume
+varip ses_vol = volume
+varip last_vol = 0.
+if barstate.isnew and barstate.isrealtime
+    last_vol := volume
+else
+    //////Calculations////////
+    //Sumup volume in time range
+    pre_volume := tf > tf[1] ? volume : tf == 1 and barstate.isrealtime ? pre_volume + volume - last_vol : barstate.ishistory and tf == 1 ? pre_volume + volume : pre_volume
+    //sumup volume not in time range
+    session_volume := tf < tf[1] ? volume : tf == 0 and barstate.isrealtime ? session_volume + volume - last_vol : barstate.ishistory and tf == 0 ? session_volume + volume : session_volume
+    session_v2 := tf > tf[1] or barstate.islast and barstate.isrealtime == false ? session_volume[1] : session_v2
+    session_v3 := tf > tf[1] ? session_v2[1] : session_v3
+    //Time range ends, happens only once per day.
+    pre_v2 := tf < tf[1] or barstate.islast and barstate.isrealtime == false ? pre_volume[1] : pre_v2
+    //Time range ends, Takes the previous time range volume to calculate later the percentage, happens only once per day.
+    pre_v3 := tf < tf[1] ? pre_v2[1] : pre_v3
+    last_vol := volume
+plot(pre_volume, style=plot.style_columns, color=tf == 1 ? color.new(color.blue, 25) : na)
+plot(show_volume_range_between_time_range ? session_volume : na , style=plot.style_columns, color=tf == 0 ? color.new(color.purple, 25) : na)
+//Time range
+chg1 = (pre_v2 / pre_v3 - 1) * 100
+chg_premarket = (pre_volume / pre_v2[1] - 1) * 100
+//Outside time range
+chg2 = (session_v2 / session_v3 - 1) * 100
+chg_session = (session_volume / session_v2[1] - 1) * 100
+var label lbl1 = na
+var label lbl2 = na
+//History Label
+if tf < tf[1] or barstate.islast and barstate.isrealtime == false and tf == 1
+    lbl1 := label.new(bar_index, pre_volume, size=size.normal, style=label.style_none, text=str.tostring(chg1, format.mintick) + ' %', textcolor=color.blue)
+//Real time label
+if barstate.isrealtime and tf == 1  
+    lbl2 := label.new(bar_index, pre_volume, size=size.normal, style=label.style_none, text=str.tostring(chg_premarket, format.mintick) + ' %', textcolor=color.blue)
+    label.delete(lbl2[1])
+//History Label
+if ((tf > tf[1]) or barstate.islast and barstate.isrealtime == false and tf == 0 ) and show_volume_range_between_time_range 
+    lbl1 := label.new(bar_index, session_volume, size=size.normal, style=label.style_none, text=str.tostring(chg2, format.mintick) + ' %', textcolor=color.purple)
+//Real time label
+if barstate.isrealtime and tf == 0 and show_volume_range_between_time_range //premarket time
+    lbl2 := label.new(bar_index, session_volume, size=size.normal, style=label.style_none, text=str.tostring(chg_session, format.mintick) + ' %', textcolor=color.purple)
+    label.delete(lbl2[1])
