@@ -1,0 +1,120 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TradingView
+
+//@version=5
+indicator("Commitment of Traders: Legacy Metrics", "COT Legacy", format = format.volume)
+
+import TradingView/LibraryCOT/1 as cot
+
+// Directions.
+var string ND  = " [ND]"
+var string LS  = " [L|Sh]"
+var string LSS = " [L|Sh|Sp]"
+
+// ————— Metric names
+var string MB01 = "Open Interest"
+var string MB02 = "Noncommercial Positions"
+var string MB03 = "Commercial Positions"
+var string MB04 = "Total Reportable Positions"
+var string MB05 = "Nonreportable Positions"
+var string MB06 = "Traders Total"
+var string MB07 = "Traders Noncommercial"
+var string MB08 = "Traders Commercial"
+var string MB09 = "Traders Total Reportable"
+var string MB10 = "Concentration Gross LT 4 TDR"
+var string MB11 = "Concentration Gross LT 8 TDR"
+var string MB12 = "Concentration Net LT 4 TDR"
+var string MB13 = "Concentration Net LT 8 TDR"
+
+// Metric name options.
+var string M01 = MB01 + ND
+var string M02 = MB02 + LSS
+var string M03 = MB03 + LS
+var string M04 = MB04 + LS
+var string M05 = MB05 + LS
+var string M06 = MB06 + ND
+var string M07 = MB07 + LSS
+var string M08 = MB08 + LS
+var string M09 = MB09 + LS
+var string M10 = MB10 + LS
+var string M11 = MB11 + LS
+var string M12 = MB12 + LS
+var string M13 = MB13 + LS
+
+// Tooltips.
+var string TT_METRIC = "Each metric is followed by its possible directions in square brackets:\n [ND] 🠆 No Direction\n [L] 🠆 Long\n [Sh] 🠆 Short\n [Sp] 🠆 Spreading" 
+var string TT_DIR    = "The 'direction' must be one that is allowed for the chosen metric. Valid selections are displayed with each metric in the above field's dropdown menu items."
+var string TT_TYPE   = "The 'type' qualifies the metric data to be retrieved."
+var string TT_MODE   = 
+  "Determines which information from the chart's symbol will be used to fetch COT data:\n
+  • 'Root' uses the root of a futures symbol ('ES' for 'ESH2020').\n
+  • 'Base currency' uses the base currency in a forex pair ('EUR' for 'EURUSD').\n
+  • 'Currency' uses the quote currency, i.e., the currency the symbol is traded in ('JPY' for 'TSE:9984' or 'USDJPY').\n
+  • 'Auto' tries all modes, in turn.\n
+  If no COT data can be found, a runtime error is generated."
+var string TT_OVERRIDE = "Instead of letting the script generate the CFTC COT code from the chart and the above selections when this field is empty, you can specify an unrelated CFTC COT code here, e.g., 001602 for wheat futures."
+
+// Inputs.
+string metricNameInput      = input.string(M01,            "Metric",             options = [M01, M02, M03, M04, M05, M06, M07, M08, M09, M10, M11, M12, M13], tooltip = TT_METRIC)
+string metricDirectionInput = input.string("No direction", "Direction",          options = ["No direction", "Long", "Short", "Spreading"], tooltip = TT_DIR)
+string metricTypeInput      = input.string("All",          "Type",               options = ["All", "Old", "Other"], tooltip = TT_TYPE)
+string selectionModeInput   = input.string("Auto",         "COT Selection Mode", options = ["Auto", "Root", "Base currency", "Currency"], tooltip = TT_MODE)
+string includeOptionsInput  = input.string("Futures",      "Futures/Options",    options = ["Futures", "Options", "Futures + Options"])
+string userCFTCCodeInput    = input.string("",             "CFTC Code",          tooltip = TT_OVERRIDE)
+
+
+getMetricName(simple string userMetricName) =>
+    result = switch userMetricName
+        M01 => MB01
+        M02 => MB02
+        M03 => MB03
+        M04 => MB04
+        M05 => MB05
+        M06 => MB06
+        M07 => MB07
+        M08 => MB08
+        M09 => MB09
+        M10 => MB10
+        M11 => MB11
+        M12 => MB12
+        M13 => MB13
+        => ""
+
+// Chart-based or user-based CFTC code.
+var string cftcCode = userCFTCCodeInput != "" ? userCFTCCodeInput : cot.convertRootToCOTCode(selectionModeInput)
+
+
+// Fetch the two sources from which we can generate all three combinations of futures and options data.
+string typeCOT = "Legacy"
+string metricName = getMetricName(metricNameInput)
+string futuresOnlyTicker        = cot.COTTickerid(typeCOT, cftcCode, false,  metricName, metricDirectionInput, metricTypeInput)
+string futuresWithOptionsTicker = cot.COTTickerid(typeCOT, cftcCode, true, metricName, metricDirectionInput, metricTypeInput)
+float futuresOnly        = request.security(futuresOnlyTicker, "D", close, ignore_invalid_symbol = true)
+float futuresWithOptions = request.security(futuresWithOptionsTicker, "D", close, ignore_invalid_symbol = true)
+
+if barstate.islastconfirmedhistory and (na(futuresOnly) or na(futuresWithOptions))
+    runtime.error(str.format("Could not find relevant COT data based on the current symbol and the COT selection  mode `{0}`.", selectionModeInput))
+
+// Select the user-defined futures and options content for the COT data.
+float COTSeries = 
+  switch includeOptionsInput
+	"Futures" => futuresOnly
+	"Options" => futuresWithOptions - futuresOnly
+	"Futures + Options" => futuresWithOptions
+	=> na
+
+// Plot COT data.
+plot(COTSeries, "COT", style = plot.style_stepline_diamond)
+
+// Display the COT ticker in the lower left.
+var table displayedSymbol = table.new(position.bottom_left, 1, 1)
+if barstate.isfirst
+    color TEXT_COLOR = color.white
+    color BG_COLOR   = color.new(color.blue, 50)
+    string dataCOT = userCFTCCodeInput != "" ? userCFTCCodeInput : cot.convertRootToCOTCode(selectionModeInput, false)
+    string requestedTicker = switch includeOptionsInput
+        "Futures" => futuresOnlyTicker
+        "Options" => futuresWithOptionsTicker + "-" + futuresOnlyTicker
+        "Futures + Options" => futuresWithOptionsTicker
+    string txt = str.format("COT data for {0} {1}\nRequested ticker: {2}", dataCOT, includeOptionsInput, requestedTicker)
+    table.cell(displayedSymbol, 0, 0, txt, text_halign = text.align_left, text_color = TEXT_COLOR, bgcolor = BG_COLOR)
