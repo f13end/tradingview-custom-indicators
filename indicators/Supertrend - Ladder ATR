@@ -1,0 +1,65 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © HeWhoMustNotBeNamed
+
+//   __    __            __       __  __                  __       __                        __      __    __              __      _______             __    __                                          __ 
+//  /  |  /  |          /  |  _  /  |/  |                /  \     /  |                      /  |    /  \  /  |            /  |    /       \           /  \  /  |                                        /  |
+//  $$ |  $$ |  ______  $$ | / \ $$ |$$ |____    ______  $$  \   /$$ | __    __   _______  _$$ |_   $$  \ $$ |  ______   _$$ |_   $$$$$$$  |  ______  $$  \ $$ |  ______   _____  ____    ______    ____$$ |
+//  $$ |__$$ | /      \ $$ |/$  \$$ |$$      \  /      \ $$$  \ /$$$ |/  |  /  | /       |/ $$   |  $$$  \$$ | /      \ / $$   |  $$ |__$$ | /      \ $$$  \$$ | /      \ /     \/    \  /      \  /    $$ |
+//  $$    $$ |/$$$$$$  |$$ /$$$  $$ |$$$$$$$  |/$$$$$$  |$$$$  /$$$$ |$$ |  $$ |/$$$$$$$/ $$$$$$/   $$$$  $$ |/$$$$$$  |$$$$$$/   $$    $$< /$$$$$$  |$$$$  $$ | $$$$$$  |$$$$$$ $$$$  |/$$$$$$  |/$$$$$$$ |
+//  $$$$$$$$ |$$    $$ |$$ $$/$$ $$ |$$ |  $$ |$$ |  $$ |$$ $$ $$/$$ |$$ |  $$ |$$      \   $$ | __ $$ $$ $$ |$$ |  $$ |  $$ | __ $$$$$$$  |$$    $$ |$$ $$ $$ | /    $$ |$$ | $$ | $$ |$$    $$ |$$ |  $$ |
+//  $$ |  $$ |$$$$$$$$/ $$$$/  $$$$ |$$ |  $$ |$$ \__$$ |$$ |$$$/ $$ |$$ \__$$ | $$$$$$  |  $$ |/  |$$ |$$$$ |$$ \__$$ |  $$ |/  |$$ |__$$ |$$$$$$$$/ $$ |$$$$ |/$$$$$$$ |$$ | $$ | $$ |$$$$$$$$/ $$ \__$$ |
+//  $$ |  $$ |$$       |$$$/    $$$ |$$ |  $$ |$$    $$/ $$ | $/  $$ |$$    $$/ /     $$/   $$  $$/ $$ | $$$ |$$    $$/   $$  $$/ $$    $$/ $$       |$$ | $$$ |$$    $$ |$$ | $$ | $$ |$$       |$$    $$ |
+//  $$/   $$/  $$$$$$$/ $$/      $$/ $$/   $$/  $$$$$$/  $$/      $$/  $$$$$$/  $$$$$$$/     $$$$/  $$/   $$/  $$$$$$/     $$$$/  $$$$$$$/   $$$$$$$/ $$/   $$/  $$$$$$$/ $$/  $$/  $$/  $$$$$$$/  $$$$$$$/ 
+//                                                                                                                                                                                                          
+//                                                                                                                                                                                                          
+//
+//@version=5
+indicator("Supertrend - Ladder ATR", overlay=true)
+import HeWhoMustNotBeNamed/arrayutils/10 as pa
+
+matype = input.string("sma", title="Moving Average  ", group="Supertrend", options=["sma", "ema", "rma", "wma", "hma"], inline="ma")
+malength = input.int(20, title="", group="Supertrend", inline="ma")
+
+multiplier = input.int(4, "ATR Multiplier", step=1, group="Supertrend")
+waitForClose = input.bool(false, "Wait For Close", group="Supertrend")
+delayed = input.bool(false, "Delayed/Sticky", group="Supertrend")
+
+supertrend_atr(float positiveAtr, float negativeAtr, simple float multiplier, simple bool waitForClose = false, simple bool delayed = false) =>
+	var dir = 1
+	lowSource = low
+	highSource = high
+	source = close
+	buyStopDiff = negativeAtr*multiplier
+	sellStopDiff = positiveAtr*multiplier
+	buyStopDiff := (dir == 1? math.min(buyStopDiff, nz(buyStopDiff[1], buyStopDiff)) : buyStopDiff)
+	sellStopDiff := (dir == -1? math.min(sellStopDiff, nz(sellStopDiff[1], sellStopDiff)) : sellStopDiff)
+	var buyStop = lowSource - buyStopDiff
+	var sellStop = highSource + sellStopDiff
+
+	buyStopCurrent = lowSource - buyStopDiff
+	sellStopCurrent = highSource + sellStopDiff
+	
+	buyStopInverse = lowSource - buyStopDiff/2
+	sellStopInverse = highSource + sellStopDiff/2
+	
+	highConfirmation = waitForClose ? source : highSource
+	lowConfirmation = waitForClose? source : lowSource
+	dir := dir == 1 and lowConfirmation[1] < buyStop[1]? -1 : dir == -1 and highConfirmation[1] > sellStop[1]? 1 : dir
+	targetReached = (dir == 1 and nz(highConfirmation[1]) >= nz(sellStop[1])) or (dir == -1 and nz(lowConfirmation[1]) <= nz(buyStop[1])) or not delayed
+	buyStop := dir == 1? (targetReached? math.max(nz(buyStop, buyStopCurrent), buyStopCurrent): buyStop): targetReached ? buyStopCurrent : math.max(nz(buyStop, buyStopInverse), buyStopInverse)
+	sellStop := dir == -1? (targetReached? math.min(nz(sellStop, sellStopCurrent), sellStopCurrent): sellStop): targetReached? sellStopCurrent : math.min(nz(sellStop, sellStopInverse), sellStopInverse)
+	[dir, dir > 0? buyStop : sellStop]
+
+var positiveTrArray = array.new_float()
+var negativeTrArray = array.new_float()
+
+if(open < close)
+    pa.push(positiveTrArray, ta.tr, malength)
+else
+    pa.push(negativeTrArray, ta.tr, malength)
+
+positiveAtr = pa.ma(positiveTrArray, matype, malength)
+negativeAtr = pa.ma(negativeTrArray, matype, malength)
+
+[dir, supertrend] = supertrend_atr(positiveAtr, negativeAtr, multiplier, waitForClose, delayed)
+plot(supertrend, color=dir>0? color.green : color.red, title="Supertrend Stop")
