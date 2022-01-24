@@ -1,0 +1,190 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © HeWhoMustNotBeNamed
+
+//   __    __            __       __  __                  __       __                        __      __    __              __      _______             __    __                                          __ 
+//  /  |  /  |          /  |  _  /  |/  |                /  \     /  |                      /  |    /  \  /  |            /  |    /       \           /  \  /  |                                        /  |
+//  $$ |  $$ |  ______  $$ | / \ $$ |$$ |____    ______  $$  \   /$$ | __    __   _______  _$$ |_   $$  \ $$ |  ______   _$$ |_   $$$$$$$  |  ______  $$  \ $$ |  ______   _____  ____    ______    ____$$ |
+//  $$ |__$$ | /      \ $$ |/$  \$$ |$$      \  /      \ $$$  \ /$$$ |/  |  /  | /       |/ $$   |  $$$  \$$ | /      \ / $$   |  $$ |__$$ | /      \ $$$  \$$ | /      \ /     \/    \  /      \  /    $$ |
+//  $$    $$ |/$$$$$$  |$$ /$$$  $$ |$$$$$$$  |/$$$$$$  |$$$$  /$$$$ |$$ |  $$ |/$$$$$$$/ $$$$$$/   $$$$  $$ |/$$$$$$  |$$$$$$/   $$    $$< /$$$$$$  |$$$$  $$ | $$$$$$  |$$$$$$ $$$$  |/$$$$$$  |/$$$$$$$ |
+//  $$$$$$$$ |$$    $$ |$$ $$/$$ $$ |$$ |  $$ |$$ |  $$ |$$ $$ $$/$$ |$$ |  $$ |$$      \   $$ | __ $$ $$ $$ |$$ |  $$ |  $$ | __ $$$$$$$  |$$    $$ |$$ $$ $$ | /    $$ |$$ | $$ | $$ |$$    $$ |$$ |  $$ |
+//  $$ |  $$ |$$$$$$$$/ $$$$/  $$$$ |$$ |  $$ |$$ \__$$ |$$ |$$$/ $$ |$$ \__$$ | $$$$$$  |  $$ |/  |$$ |$$$$ |$$ \__$$ |  $$ |/  |$$ |__$$ |$$$$$$$$/ $$ |$$$$ |/$$$$$$$ |$$ | $$ | $$ |$$$$$$$$/ $$ \__$$ |
+//  $$ |  $$ |$$       |$$$/    $$$ |$$ |  $$ |$$    $$/ $$ | $/  $$ |$$    $$/ /     $$/   $$  $$/ $$ | $$$ |$$    $$/   $$  $$/ $$    $$/ $$       |$$ | $$$ |$$    $$ |$$ | $$ | $$ |$$       |$$    $$ |
+//  $$/   $$/  $$$$$$$/ $$/      $$/ $$/   $$/  $$$$$$/  $$/      $$/  $$$$$$/  $$$$$$$/     $$$$/  $$/   $$/  $$$$$$/     $$$$/  $$$$$$$/   $$$$$$$/ $$/   $$/  $$$$$$$/ $$/  $$/  $$/  $$$$$$$/  $$$$$$$/ 
+//                                                                                                                                                                                                          
+//                                                                                                                                                                                                          
+//
+//@version=5
+indicator("Manual Harmonic Patterns - With interactive inputs", overlay=true, max_bars_back=500)
+import HeWhoMustNotBeNamed/eHarmonicpatterns/2 as hp
+import HeWhoMustNotBeNamed/arrayutils/13 as pa
+
+x = input.price(0,'X',group='XABCD', inline=  '1', confirm=true)
+xBarTime = input.time(0,'',group='XABCD', inline=  '1', confirm=true)
+a = input.price(0,'A',group='XABCD', inline=  '2', confirm=true)
+aBarTime = input.time(0,'',group='XABCD', inline=  '2', confirm=true)
+b = input.price(0,'B',group='XABCD', inline=  '3', confirm=true)
+bBarTime = input.time(0,'',group='XABCD', inline=  '3', confirm=true)
+c = input.price(0,'C',group='XABCD', inline=  '4', confirm=true)
+cBarTime = input.time(0,'',group='XABCD', inline=  '4', confirm=true)
+d = input.price(0,'D',group='XABCD', inline=  '5', confirm=true)
+dBarTime = input.time(0,'',group='XABCD', inline=  '5', confirm=true)
+
+showTargets = input.bool(true, title='Show Targets', group='Display', inline='showHide')
+showXABCD = input.bool(true, title='Show XABCD', group='Display', inline='showHide')
+showRatios = input.bool(true, title='Show Ratios', group='Display', inline='showHide')
+
+fillMajorTriangles = input.bool(true, title="Fill XAB/BCD", group="Display", inline="fill1")
+majorFillTransparency = input.int(70, step=5, title="", group="Display", inline="fill1")
+fillMinorTriangles = input.bool(true, title="Fill ABC/XBD", group="Display", inline="fill2")
+minorFillTransparency = input.int(90, step=5, title="", group="Display", inline="fill2")
+
+errorPercent = input.int(8, group="Miscellaneous")
+patternColor = input.color(color.purple, group="Miscellaneous")
+
+f_draw_pattern_line(y1, y2, x1, x2, lineColor, width, style) =>
+    targetLine = line.new(y1=y1, y2=y2, x1=x1, x2=x2, color=lineColor, width=width, style=style)
+    targetLine
+
+f_draw_pattern_label(y, x, txt, textcolor, style, yloc, size) =>
+    targetLabel = label.new(y=y, x=x, text=txt, textcolor=textcolor, style=style, yloc=yloc, size=size)
+    targetLabel
+
+draw_xabcd(x, a, b, c, d, xBar, aBar, bBar, cBar, dBar, dir, labelColor, patterns) =>
+    hasPatterns = array.includes(patterns, true), 
+    isCypher = array.get(patterns, 6)
+    xa = f_draw_pattern_line(y1=x, y2=a, x1=xBar, x2=aBar, lineColor=labelColor, width=1, style=line.style_solid)
+    ab = f_draw_pattern_line(y1=a, y2=b, x1=aBar, x2=bBar, lineColor=labelColor, width=1, style=line.style_solid)
+    bc = f_draw_pattern_line(y1=b, y2=c, x1=bBar, x2=cBar, lineColor=labelColor, width=1, style=line.style_solid)
+    cd = f_draw_pattern_line(y1=c, y2=d, x1=cBar, x2=dBar, lineColor=labelColor, width=1, style=line.style_solid)
+    xb = f_draw_pattern_line(y1=x, y2=b, x1=xBar, x2=bBar, lineColor=labelColor, width=1, style=line.style_dashed)
+    bd = f_draw_pattern_line(y1=b, y2=d, x1=bBar, x2=dBar, lineColor=labelColor, width=1, style=line.style_dashed)
+    ac = f_draw_pattern_line(y1=a, y2=c, x1=aBar, x2=cBar, lineColor=labelColor, width=1, style=line.style_dotted)
+    xd = f_draw_pattern_line(y1=x, y2=d, x1=xBar, x2=dBar, lineColor=labelColor, width=1, style=line.style_dotted)
+
+    if(fillMajorTriangles and hasPatterns)
+        xaab = linefill.new(xa, ab, color.new(labelColor, majorFillTransparency))
+        xbab = linefill.new(xb, ab, color.new(labelColor, majorFillTransparency))
+        bccd = linefill.new(bc, cd, color.new(labelColor, majorFillTransparency))
+        bdcd = linefill.new(bd, cd, color.new(labelColor, majorFillTransparency))
+
+    if(fillMinorTriangles and hasPatterns)
+        abbc = linefill.new(ab, bc, color.new(labelColor, minorFillTransparency))
+        acbc = linefill.new(ac, bc, color.new(labelColor, minorFillTransparency))
+        xbbd = linefill.new(xb, bd, color.new(labelColor, minorFillTransparency))
+        xdbd = linefill.new(xd, bd, color.new(labelColor, minorFillTransparency))
+
+    if showXABCD
+        gap = syminfo.mintick
+        xLabel = f_draw_pattern_label(y=dir>0?x-gap:x+gap, x=xBar, txt='X', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        aLabel = f_draw_pattern_label(y=dir>0?a+gap:a-gap, x=aBar, txt='A', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        bLabel = f_draw_pattern_label(y=dir>0?b-gap:b+gap, x=bBar, txt='B', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        cLabel = f_draw_pattern_label(y=dir>0?c+gap:c-gap, x=cBar, txt='C', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        dLabel = f_draw_pattern_label(y=dir>0?d-gap:d+gap, x=dBar, txt='D', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+    if showRatios
+        xabRatio = math.round(math.abs(a - b) / math.abs(x - a), 3)
+        xabRatioBar = (xBar + bBar) / 2
+
+        abcRatio = math.round(math.abs(b - c) / math.abs(a - b), 3)
+        abcRatioBar = (aBar + cBar) / 2
+
+        bcdRatio = math.round(math.abs(c - d) / math.abs(b - c), 3)
+        bcdRatioBar = (bBar + dBar) / 2
+
+        xadRatio = math.round(math.abs(a - d) / math.abs(x - a), 3)
+        xadRatioBar = (xBar + dBar) / 2
+
+        axcRatio = math.round(math.abs(x - c) / math.abs(x - a), 3)
+        xcdRatio = math.round(math.abs(d - c) / math.abs(x - c), 3)
+
+        xabRatioPrice = line.get_price(xb, xabRatioBar)
+        abcRatioPrice = line.get_price(ac, abcRatioBar)
+        bcdRatioPrice = line.get_price(bd, bcdRatioBar)
+        xadRatioPrice = line.get_price(xd, xadRatioBar)
+
+        abcRatioLabelText = str.tostring(abcRatio) + '(ABC)' + (isCypher ? '\n' + str.tostring(axcRatio) + '(AXC)' : '')
+        xadRatioLabelText = str.tostring(xadRatio) + '(XAD)' + (isCypher ? '\n' + str.tostring(xcdRatio) + '(XCD)' : '')
+        xabLabel = f_draw_pattern_label(y=xabRatioPrice, x=xabRatioBar, txt=str.tostring(xabRatio) + '(XAB)', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        abcLabel = f_draw_pattern_label(y=abcRatioPrice, x=abcRatioBar, txt=abcRatioLabelText, textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        bcdLabel = f_draw_pattern_label(y=bcdRatioPrice, x=bcdRatioBar, txt=str.tostring(bcdRatio) + '(BCD)', textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+        xadLabel = f_draw_pattern_label(y=xadRatioPrice, x=xadRatioBar, txt=xadRatioLabelText, textcolor=labelColor, style=label.style_none, yloc=yloc.price, size=size.small)
+
+get_prz_range(float x, float a, float b, float c, bool[] patternArray, simple int start_adj=0, simple int end_adj=0)=>
+    startRange = array.new_float(16, na)
+    endRange = array.new_float(16, na)
+    if(array.includes(patternArray, true))
+        //Gartley
+        pa.getrange(x, a, 0.786, 0.786, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 0)
+        //Crab
+        pa.getrange(x, a, 1.618, 1.618, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 1)
+        //DeepCrab
+        pa.getrange(x, a, 1.618, 1.618, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 2)
+        //Bat
+        pa.getrange(x, a, 0.886, 0.886, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 3)
+        //Butterfly
+        pa.getrange(x, a, 1.272, 1.618, 0, start_adj, end_adj, patternArray, startRange, endRange, 4)
+        //Shark
+        pa.getrange(x, a, 0.886, 0.886, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 5)
+        //Cypher
+        pa.getrange(x, c, 0.786, 0.786, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 6)
+        //NenStar
+        pa.getrange(x, a, 1.272, 1.272, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 7)
+        //Anti NenStar
+        pa.getrange(x, a, 0.786, 0.786, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 8)
+        //Anti Shark
+        pa.getrange(x, a, 1.130, 1.130, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 9)
+        //Anti Cypher
+        pa.getrange(x, a, 1.272, 1.272, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 10)
+        //Anti Crab
+        pa.getrange(x, a, 0.618, 0.618, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 11)
+        //Anti Butterfly
+        pa.getrange(x, a, 0.618, 0.786, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 12)
+        //Anti Bat
+        pa.getrange(x, a, 1.128, 1.128, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 13)
+        //Anti Gartley
+        pa.getrange(x, a, 1.272, 1.272, errorPercent, start_adj, end_adj, patternArray, startRange, endRange, 14)
+        //Navarro200
+        pa.getrange(x, a, 0.886, 1.127, 0, start_adj, end_adj, patternArray, startRange, endRange, 15)
+    dStart = b > c? array.min(startRange) : array.max(startRange)
+    dEnd = b > c? array.max(endRange) : array.min(endRange)
+    [dStart, dEnd]
+
+f_draw_entry_box(y1, y2, x1, linecolor, labelColor, labelText) =>
+    x2 = x1 + 20
+    y = (y1 + y2) / 2
+    xloc = xloc.bar_index
+    transp = 70
+    entryBox = box.new(x1, y1, x2, y2, linecolor, 1, line.style_dotted, xloc=xloc, bgcolor=color.new(labelColor, transp), text=labelText,
+                         text_color=color.silver, text_size=size.small)
+
+var printed = false
+if(barstate.islast and not printed)
+    flags = array.new_bool(16, true)
+    [patterns, patternLabels] = hp.isHarmonicPattern(x, a, b, c, d, flags, errorPercent = errorPercent)
+
+    int xBar = na
+    int aBar = na
+    int bBar = na
+    int cBar = na
+    int dBar = na
+    
+    offset = 0
+    while(na(xBar) or na(aBar) or na(bBar) or na(cBar) or na(dBar))
+        bartime = time[offset]
+        if(na(xBar) and bartime == xBarTime)
+            xBar := bar_index - offset
+        if(na(aBar) and bartime == aBarTime)
+            aBar := bar_index - offset
+        if(na(bBar) and bartime == bBarTime)
+            bBar := bar_index - offset
+        if(na(cBar) and bartime == cBarTime)
+            cBar := bar_index - offset
+        if(na(dBar) and bartime == dBarTime)
+            dBar := bar_index - offset
+        offset+=1
+                         
+    dir = c > d? 1 : -1
+    draw_xabcd(x, a, b, c, d, xBar, aBar, bBar, cBar, dBar, dir, patternColor, patterns)
+    [dStart, dEnd] = get_prz_range(x, a, b, c, patterns)
+    lbl = pa.getLabel(patterns, patternLabels)
+    f_draw_entry_box(dStart, dEnd, dBar+5, patternColor, patternColor, lbl) 
+    printed := true
