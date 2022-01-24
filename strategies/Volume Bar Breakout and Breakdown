@@ -1,0 +1,32 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tradeswithashish
+
+//@version=5
+indicator(title="Volume bar range", shorttitle="Highest Volume Bar Range", overlay=true)
+lookback=input.int(title="How many bars to check", defval=75, minval=10, maxval=500, step=5)
+
+//defining variables for high and low of volume bar
+var highVB = high
+var lowVB = low
+highestvol = ta.highest(volume, lookback)
+vol=volume>0
+volMA=ta.sma(volume, 20)
+
+if vol
+    for i = 1 to lookback by 1
+        if volume[i] == highestvol
+            highVB := high[i]
+            lowVB := low[i]
+
+colfill=highVB==highVB[1]?color.aqua:color.white
+plot1 = plot(highVB, title='Candle high', color=color.new(color.white,100),linewidth=1, style=plot.style_line)
+plot2 = plot(lowVB, title='Candle low', color=color.new(color.white,100), linewidth=1, style=plot.style_line)
+fill(plot1, plot2, title='Range of Volume bar', color=color.new(colfill, 80))
+
+
+//Checking the breakout and breakdown criteria
+breakout=ta.crossover(close, highVB) and volume>volMA and barstate.isconfirmed and volume>volume[1] and (close-low)/(high-low)>0.5
+breakdown=ta.crossunder(close, lowVB) and volume>volMA and barstate.isconfirmed and volume>volume[1] and (close-low)/(high-low)<0.5
+
+plotshape(breakout, title="Breakout signal", style=shape.labelup, size=size.small, color=color.blue, location= location.belowbar, text="BUY", textcolor=color.white)
+plotshape(breakdown, title="Breakdown signal", style=shape.labeldown, size=size.small, color=color.black, location= location.abovebar, text="SELL", textcolor=color.white)
