@@ -1,0 +1,390 @@
+//@version=4
+
+//Arranged by @ClassicScott
+
+//A version of Stephen J. Klinger's, Klinger Oscillator (sometimes called Klinger Volume Oscillator). I've changed virtually nothing about the indicator itself,
+//but added some lookback inputs for the EMAs the oscillator is derived from (traditionally 34 and 55), and added a few other things, as is my wont.
+
+//But what is the Klinger Oscillator? Essentially, the calculation looks at the high, low, and close of the current period, and compares that to the
+//previous period's. If it is greater, it adds volume, and if it is less, it subtracts volume. It then takes an EMA of two different lookback periods of that
+//calculation and subtracts one from the other. That's your oscillator. There is then made a signal line of the oscillator that a trader can use, in combination
+//with the zero line, for taking trades. Investopedia has a good article on it, so if you're looking for more specifics, check there.
+
+//What I've done is add a selection of different moving averages that you may choose for the signal line. Usually it's a 13 period EMA, and that comes default, but
+//here you could use an ALMA or HMA, or modular filter, etc. Find something that works for your style/algorithm.
+
+//Of course there are all the usual additions of mine with the various ways of coloring the indicator and candles, adjustable Donchian Bands, and alerts.
+//A new addition that I've just added to all my indicators (oscillators, anyway) are divergences. This is more or less just a copy and paste of the divergence
+//indicator available in TradingView. In this case you can set it to plot divergences off either the Klinger or the signal line. Depending on which one you choose
+//you may have to adjust pivot lookbacks, and lookback range. I've kept the settings default from the RSI TradingView version.
+
+
+study(title="+ Klinger Oscillator", shorttitle="+ KVO", format=format.volume, resolution="", resolution_gaps=true)
+
+var cumVol = 0.
+cumVol += nz(volume)
+sv = (change(hlc3) >= 0 ? volume : -volume)
+
+lkbk_1 = input(34, title="Lookback for EMA 1", minval=1, group="KVO Inputs",
+     tooltip="The Klinger Volume Oscillator is the difference between two exponential moving averages of different lengths. Standards are 34 and 55.")
+lkbk_2 = input(55, title="Lookback for EMA 2", minval=1, group="KVO Inputs")
+
+
+kvo = ema(sv, lkbk_1) - ema(sv, lkbk_2)
+
+
+hline(0, title="Zero Line", linestyle=hline.style_dotted, color=color.new(#787b86, 0))
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+i_sig_ma = input(type=input.string, defval="EMA", options=["ALMA", "EMA", "DEMA", "TEMA", "FRAMA", "HMA", "JMA", "LSMA", "MF", "RDMA", "SMA", "TMA", "VAMA", "WMA"], title="Signal Type", group="Signal Inputs")
+i_sig_lkbk = input(13, title="Signal Lookback", minval=1, group="Signal Inputs", tooltip="Typically the signal line is a 13 period EMA.")
+
+
+////SIGNAL MOVING AVERAGE INPUTS AND CALCULATIONS
+
+//ALMA
+sig_alma_offset = input(title="* ALMA Offset", type=input.float, step=0.05, defval=0.85, inline="alma", group="Signal Inputs")
+sig_alma_sigma = input(title="* ALMA Sigma", type=input.float, step=0.5, defval=6, inline="alma", group="Signal Inputs")
+
+//FRAMA
+sig_fc = input(defval=1, minval=1, title="* FRAMA Fast Period", inline="frama", group="Signal Inputs")
+sig_sc = input(defval=200, minval=1, title="* FRAMA Slow Period", inline="frama", group="Signal Inputs")
+
+//JMA
+sig_jurik_phase = input(title="* Jurik (JMA) Phase", type=input.integer, defval=1, inline="jma", group="Signal Inputs")
+sig_jurik_power = input(title="* Jurik (JMA) Power", type=input.float, defval=1, minval=0.1, maxval=10, step=0.1, inline="jma", group="Signal Inputs")
+
+//LSMA
+sig_offset = input(title="* Least Squares (LSMA) - Offset", type=input.integer, defval=0, group="Signal Inputs")
+
+//MF
+i_sig_beta = input(0.8,minval=0,maxval=1,step=0.1,  title="* Modular Filter - Beta", inline="mf", group="Signal Inputs")
+sig_feedback = input(false, title="* Modular Filter - Feedback", inline="mf", group="Signal Inputs")
+sig_z = input(0.5,title="* Modular Filter - Feedback Weighting",step=0.1, minval=0, maxval=1, inline="mf", group="Signal Inputs")
+
+//TEMA
+sig_tema(kvo, i_sig_lkbk) =>
+    sig_ema1 = ema(kvo, i_sig_lkbk)
+    sig_ema2 = ema(sig_ema1, i_sig_lkbk)
+    sig_ema3 = ema(sig_ema2, i_sig_lkbk)
+    (3 * sig_ema1) - (3 * sig_ema2) + sig_ema3
+
+//VAMA
+sig_volatility_lookback = input(10, title="* Volatility Adjusted (VAMA) - Lookback Length", minval=1, group="Signal Inputs")
+
+
+////LIST OF MOVING AVERAGES
+sig_ma(type, kvo, i_sig_lkbk) =>
+    float result = 0
+    if type=="ALMA"
+        result:= alma(kvo, i_sig_lkbk, sig_alma_offset, sig_alma_sigma)
+    if type=="EMA"
+        result := ema(kvo, i_sig_lkbk)
+    if type=="DEMA"
+        e = ema(kvo, i_sig_lkbk)
+        result := 2 * e - ema(e, i_sig_lkbk)
+    if type=="TEMA"
+        e = ema(kvo, i_sig_lkbk)
+        result := 3 * (e - ema(e, i_sig_lkbk)) + ema(ema(e, i_sig_lkbk), i_sig_lkbk)
+    if type=="FRAMA"
+        i_sig_lkbk_ = i_sig_lkbk / 2
+        sig_e = 2.7182818284590452353602874713527
+        sig_w = log(2 / (sig_sc + 1)) / log(sig_e) // Natural logarithm (ln(2/(SC+1))) workaround
+        sig_h1 = highest(high, i_sig_lkbk_)
+        sig_l1 = lowest(low, i_sig_lkbk_)
+        sig_n1 = (sig_h1 - sig_l1) / i_sig_lkbk_
+        sig_h2 = highest(high, i_sig_lkbk_)[i_sig_lkbk_]
+        sig_l2 = lowest(low, i_sig_lkbk_)[i_sig_lkbk_]
+        sig_n2 = (sig_h2 - sig_l2) / i_sig_lkbk_
+        sig_h3 = highest(high, i_sig_lkbk)
+        sig_l3 = lowest(low, i_sig_lkbk)
+        sig_n3 = (sig_h3 - sig_l3) / i_sig_lkbk
+        sig_dimen1 = (log(sig_n1 + sig_n2) - log(sig_n3)) / log(2)
+        sig_dimen = iff(sig_n1 > 0 and sig_n2 > 0 and sig_n3 > 0, sig_dimen1, nz(sig_dimen1[1]))
+        sig_alpha1 = exp(sig_w * (sig_dimen - 1))
+        sig_oldalpha = sig_alpha1 > 1 ? 1 : (sig_alpha1 < 0.01 ? 0.01 : sig_alpha1)
+        sig_oldn = (2 - sig_oldalpha) / sig_oldalpha
+        sig_n = (((sig_sc - sig_fc) * (sig_oldn - 1)) / (sig_sc - 1)) + sig_fc
+        sig_alpha_ = 2 / (sig_n + 1)
+        sig_alpha = sig_alpha_ < 2 / (sig_sc + 1) ? 2 / (sig_sc + 1) : (sig_alpha_ > 1 ? 1 : sig_alpha_)
+        sig_frama = 0.0
+        sig_frama := (1 - sig_alpha) * nz(sig_frama[1]) + sig_alpha * kvo
+        result := sig_frama
+    if type=="HMA"
+        result := wma(2 * wma(kvo, i_sig_lkbk / 2) - wma(kvo, i_sig_lkbk), round(sqrt(i_sig_lkbk)))
+    if type=="JMA"
+        /// Copyright © 2018 Alex Orekhov (everget)
+        /// Copyright © 2017 Jurik Research and Consulting.
+        sig_phaseRatio = sig_jurik_phase < -100 ? 0.5 : sig_jurik_phase > 100 ? 2.5 : sig_jurik_phase / 100 + 1.5
+        sig_beta = 0.45 * (i_sig_lkbk - 1) / (0.45 * (i_sig_lkbk - 1) + 2)
+        sig_alpha = pow(sig_beta, sig_jurik_power)
+        sig_jma = 0.0
+        sig_e0 = 0.0
+        sig_e0 := (1 - sig_alpha) * kvo + sig_alpha * nz(sig_e0[1])
+        sig_e1 = 0.0
+        sig_e1 := (kvo - sig_e0) * (1 - sig_beta) + sig_beta * nz(sig_e1[1])
+        sig_e2 = 0.0
+        sig_e2 := (sig_e0 + sig_phaseRatio * sig_e1 - nz(sig_jma[1])) * pow(1 - sig_alpha, 2) + pow(sig_alpha, 2) * nz(sig_e2[1])
+        sig_jma := sig_e2 + nz(sig_jma[1])
+        result := sig_jma
+    if type=="LSMA"
+        result := linreg(kvo, i_sig_lkbk, sig_offset)
+    if type=="MF"
+        sig_ts = 0., sig_b = 0., sig_c = 0., sig_os = 0.
+        //----
+        sig_alpha = 2 / (i_sig_lkbk + 1)
+        sig_a = sig_feedback ? sig_z * kvo + (1 - sig_z) * nz(sig_ts[1], kvo) : kvo
+        //----
+        sig_b := sig_a > sig_alpha * sig_a + (1 - sig_alpha) * nz(sig_b[1], sig_a) ? sig_a : sig_alpha * sig_a + (1 - sig_alpha) * nz(sig_b[1], sig_a)
+        sig_c := sig_a < sig_alpha * sig_a + (1 - sig_alpha) * nz(sig_c[1], sig_a) ? sig_a : sig_alpha * sig_a + (1 - sig_alpha) * nz(sig_c[1], sig_a)
+        sig_os := sig_a == sig_b ? 1 : sig_a == sig_c ? 0 : sig_os[1]
+        //----
+        sig_upper = i_sig_beta * sig_b + (1 - i_sig_beta) * sig_c
+        sig_lower = i_sig_beta * sig_c + (1 - i_sig_beta) * sig_b 
+        sig_ts := sig_os * sig_upper + (1 - sig_os) * sig_lower
+        result := sig_ts
+    if type=="RDMA"
+        sig_sma_200 = sma(kvo, 200)
+        sig_sma_100 = sma(kvo, 100)
+        sig_sma_50 = sma(kvo, 50)
+        sig_sma_24 = sma(kvo, 24)
+        sig_sma_9 = sma(kvo, 9)
+        sig_sma_5 = sma(kvo, 5)
+        result := (sig_sma_200 + sig_sma_100 + sig_sma_50 + sig_sma_24 + sig_sma_9 + sig_sma_5) / 6
+    if type=="SMA"
+        result := sma(kvo, i_sig_lkbk)
+    if type=="TMA"
+        result := sma(sma(kvo, ceil(i_sig_lkbk / 2)), floor(i_sig_lkbk / 2) + 1)
+    if type=="VAMA"
+        /// Copyright © 2019 to present, Joris Duyck (JD)
+        sig_mid = ema(kvo, i_sig_lkbk)
+        sig_dev = kvo - sig_mid
+        sig_vol_up = highest(sig_dev, sig_volatility_lookback)
+        sig_vol_down = lowest(sig_dev, sig_volatility_lookback)
+        result := sig_mid + avg(sig_vol_up, sig_vol_down)
+    if type=="WMA"
+        result := wma(kvo, i_sig_lkbk)    
+    result
+
+sig = sig_ma(i_sig_ma, kvo, i_sig_lkbk)
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+////DONCHIAN CHANNEL
+dc = input(defval=true, title="Donchian Channel?", group="Donchian Channel")
+dc_lkbk = input(defval=55, title="Lookback", group="Donchian Channel")
+band_width = input(defval=5, type=input.float, step=0.5, title="Band Thickness", group="Donchian Channel", tooltip="Defines the thickness of the band. Larger number is thinner. Realistically you wouldn't want to go below 4, I would think, or above 10.")
+
+upper = highest(kvo, dc_lkbk)
+lower = lowest(kvo, dc_lkbk)
+
+band = (upper - lower) / band_width
+
+inner_upper = upper - band
+inner_lower = lower + band
+
+upper_plot = plot(dc ? upper : na, color=#ef5350, title="Upper DC", display=display.none)
+lower_plot = plot(dc ? lower : na, color=#2196f3, title="Lower DC", display=display.none)
+i_upper_plot = plot(dc ? inner_upper : na, color=#ef5350, title="Inner Upper DC", display=display.none)
+i_lower_plot = plot(dc ? inner_lower : na, color=#2196f3, title="Inner Lower DC", display=display.none)
+
+dc_pos_fill = input(color.new(#2196f3, 85), title="Lower Band Fill", inline="dcc", group="Donchian Channel")
+dc_neg_fill = input(color.new(#ef5350, 85), title="Upper Band Fill", inline="dcc", group="Donchian Channel")
+
+fill(upper_plot, i_upper_plot, color=dc_neg_fill, title="Upper DC Band")
+fill(lower_plot, i_lower_plot, color=dc_pos_fill, title="Lower DC Band")
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+////KLINGER OSCILLATOR COLORS AND PLOTS
+i_kvo_color_selection = input(defval="Gradient", options=["Gradient", "OB/OS", "Signal Line"], title="Reference for KVO Colors", group="KVO Inputs",
+     tooltip="Defines the color reference for the KVO. Gradient is a gradient between the upper and lower Donchian bands. OB/OS is simply 'overbought' or 'oversold,' using the Donchian channels. And Signal is the KVO in reference to the signal line.")
+
+bull_kvo_color = input(color.new(#ff9800, 0), title="Bullish", inline="kvo_c", group="KVO Inputs")
+neut_kvo_color = input(color.new(#787b86, 0), title="Neutral", inline="kvo_c", group="KVO Inputs")
+bear_kvo_color = input(color.new(#2962ff, 0), title="Bearish", inline="kvo_c", group="KVO Inputs")
+
+kvo_1 = color.from_gradient(kvo, lower, upper, bear_kvo_color, bull_kvo_color)
+
+kvo_2 = kvo >= inner_upper ? bull_kvo_color : kvo <= inner_lower ? bear_kvo_color : neut_kvo_color
+
+kvo_3 = kvo > sig and kvo > 0 ? bull_kvo_color : kvo < sig and kvo < 0 ? bear_kvo_color : neut_kvo_color
+
+kvo_color_selection = i_kvo_color_selection == "Gradient" ? kvo_1 : i_kvo_color_selection == "OB/OS" ? kvo_2 :  i_kvo_color_selection == "Signal Line" ? kvo_3 : na
+
+p_kvo = plot(kvo, color=kvo_color_selection, title="KVO")
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+////SIGNAL LINE COLORS AND PLOTS
+i_sig_color_selection = input(defval="Gradient", options=["Gradient", "OB/OS", "Zero Line"], title="Reference for Signal Colors", group="Signal Inputs",
+     tooltip="Defines the color reference for the signal line. See tooltip for KVO.")
+
+bull_sig_color = input(color.new(#00bcd4, 79), title="Bullish", inline="sig_c", group="Signal Inputs")
+neut_sig_color = input(color.new(#787b86, 79), title="Neutral", inline="sig_c", group="Signal Inputs")
+bear_sig_color = input(color.new(#e91e63, 79), title="Bearish", inline="sig_c", group="Signal Inputs")
+
+sig_1 = color.from_gradient(sig, inner_lower, inner_upper, bear_sig_color, bull_sig_color)
+
+sig_2 = sig >= inner_upper ? bull_sig_color : sig <= inner_lower ? bear_sig_color : neut_sig_color
+
+sig_3 = sig > sig[1] and sig > 0 ? bull_sig_color : sig < sig[1] and sig < 0 ? bear_sig_color : neut_sig_color
+
+sig_color_selection = i_sig_color_selection == "Gradient" ? sig_1 : i_sig_color_selection == "OB/OS" ? sig_2 : i_sig_color_selection == "Zero Line" ? sig_3 : na
+
+p_sig = plot(sig, color=sig_color_selection, style=plot.style_area, title="Signal Line")
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+////CANDLE COLOR
+candle_color = input(defval=true, title="Colored Candles?", group="Candle Colors")
+i_cc_selection = input(defval="KVO | Gradient", options=["KVO | Gradient", "KVO | OB/OS", "KVO + Signal Line", "Signal Line | Gradient", "Signal Line + Zero Line"], title="Reference for Candle Colors", group="Candle Colors",
+     tooltip="Defines the color reference for the candles. See tooltip for KVO.")
+
+cc_kvo_up = input(color.new(#ff9800, 0), title="KVO Bullish", inline="cc_kvo", group="Candle Colors")
+cc_sig_up = input(color.new(#00bcd4, 0), title="Signal Bullish", inline="cc_sig", group="Candle Colors")
+cc_neut = input(color.new(#787b86, 0), title="Neutral", inline="cc", group="Candle Colors")
+cc_sig_down = input(color.new(#e91e63, 0), title="Signal Bearish", inline="cc_sig", group="Candle Colors")
+cc_kvo_down = input(color.new(#2962ff, 0), title="KVO Bearish", inline="cc_kvo", group="Candle Colors")
+
+cc_1 = color.from_gradient(kvo, lower, upper, cc_kvo_down, cc_kvo_up)
+
+cc_2 = kvo >= inner_upper ? cc_kvo_up : kvo <= inner_lower ? cc_kvo_down : cc_neut
+
+cc_3 = kvo > sig and kvo > 0 ? cc_kvo_up : kvo < sig and kvo < 0 ? cc_kvo_down : cc_neut
+
+cc_4 = color.from_gradient(sig, inner_lower, inner_upper, cc_sig_down, cc_sig_up)
+
+cc_5 = sig > sig[1] and sig > 0 ? cc_sig_up : sig < sig[1] and sig < 0 ? cc_sig_down : cc_neut
+
+cc_selection = i_cc_selection == "KVO | Gradient" ? cc_1 : i_cc_selection == "KVO | OB/OS" ? cc_2 : i_cc_selection == "KVO + Signal Line" ? cc_3 : i_cc_selection == "Signal Line | Gradient" ? cc_4 : i_cc_selection == "Signal Line + Zero Line" ? cc_5 : na
+
+barcolor(candle_color ? cc_selection : na, title="Colored Candles")
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+////DIVERGENCES
+i_div_select = input(type=input.string, defval="KVO", options=["KVO", "Signal"], title="Source Select for Divergences", group="Divergences")
+div_select = i_div_select == "KVO" ? kvo : i_div_select == "Signal" ? sig : na
+
+lkbk_right = input(title="Pivot Lookback Right", defval=5, group="Divergences")
+lkbk_left = input(title="Pivot Lookback Left", defval=5, group="Divergences")
+max_range = input(title="Max of Lookback Range", defval=60, group="Divergences")
+min_range = input(title="Min of Lookback Range", defval=5, group="Divergences")
+plot_bull = input(title="Bull?", defval=true, group="Divergences")
+plot_hdn_bull = input(title="Hidden Bull?", defval=false, group="Divergences")
+plot_bear = input(title="Bear?", defval=true, group="Divergences")
+plot_hdn_bear = input(title="Hidden Bear?", defval=false, group="Divergences")
+
+////COLOR INPUTS
+c_bull = input(color.new(color.blue, 0), title="Bull", inline="bull div", group="Divergences")
+c_hdn_bull= input(color.new(color.yellow, 0), title="Hidden Bull", inline="bull div", group="Divergences")
+c_bear = input(color.new(color.red, 0), title="Bear", inline="bear div", group="Divergences")
+c_hdn_bear = input(color.new(color.fuchsia, 0), title="Hidden Bear", inline="bear div", group="Divergences")
+c_text = input(color.new(color.white, 0), title="Text  ", inline="text", group="Divergences")
+c_na = color.new(color.white, 100)
+
+
+
+pl_found = na(pivotlow(div_select, lkbk_left, lkbk_right)) ? false : true
+
+ph_found = na(pivothigh(div_select, lkbk_left, lkbk_right)) ? false : true
+
+_inRange(cond) =>
+	bars = barssince(cond == true)
+	min_range <= bars and bars <= max_range
+
+
+////
+// Bullish
+// Osc: Higher Low
+
+osc_hl = div_select[lkbk_right] > valuewhen(pl_found, div_select[lkbk_right], 1) and _inRange(pl_found[1])
+
+// Price: Lower Low
+
+price_ll = low[lkbk_right] < valuewhen(pl_found, low[lkbk_right], 1)
+bull_cond = plot_bull and price_ll and osc_hl and pl_found
+
+plot(pl_found ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Bull", linewidth=1, color=(bull_cond ? c_bull : c_na))
+
+plotshape(bull_cond ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Bullish Label", text=" Bull ", style=shape.labelup, location=location.absolute, color=c_bull, textcolor=c_text, display=display.none)
+
+
+////
+// Hidden Bullish
+// Osc: Lower Low
+
+osc_ll = div_select[lkbk_right] < valuewhen(pl_found, div_select[lkbk_right], 1) and _inRange(pl_found[1])
+
+// Price: Higher Low
+
+price_hl = low[lkbk_right] > valuewhen(pl_found, low[lkbk_right], 1)
+
+hdn_bull_cond = plot_hdn_bull and price_hl and osc_ll and pl_found
+
+plot(pl_found ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Hidden Bull", linewidth=1, color=(hdn_bull_cond ? c_hdn_bull : c_na))
+
+plotshape(hdn_bull_cond ? div_select[lkbk_right] : na,offset=-lkbk_right, title="Hidden Bullish Label", text=" H. Bull ", style=shape.labelup, location=location.absolute, color = c_bull, textcolor = c_text, display=display.none)
+
+
+////
+// Bearish
+// Osc: Lower High
+
+osc_lh = div_select[lkbk_right] < valuewhen(ph_found, div_select[lkbk_right], 1) and _inRange(ph_found[1])
+
+// Price: Higher High
+
+price_hh = high[lkbk_right] > valuewhen(ph_found, high[lkbk_right], 1)
+
+bear_cond = plot_bear and price_hh and osc_lh and ph_found
+
+plot(ph_found ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Bear", linewidth=1, color=(bear_cond ? c_bear : c_na))
+
+plotshape(bear_cond ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Bearish Label", text=" Bear ", style=shape.labeldown, location=location.absolute, color=c_bear, textcolor=c_text, display=display.none)
+
+
+////
+// Hidden Bearish
+// Osc: Higher High
+
+osc_hh = div_select[lkbk_right] > valuewhen(ph_found, div_select[lkbk_right], 1) and _inRange(ph_found[1])
+
+// Price: Lower High
+
+price_lh = high[lkbk_right] < valuewhen(ph_found, high[lkbk_right], 1)
+
+hdn_bear_cond = plot_hdn_bear and price_lh and osc_hh and ph_found
+
+plot(ph_found ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Hidden Bear", linewidth=1, color=(hdn_bear_cond ? c_hdn_bear : c_na))
+
+plotshape(hdn_bear_cond ? div_select[lkbk_right] : na, offset=-lkbk_right, title="Hidden Bearish Label", text=" H. Bear ", style=shape.labeldown, location=location.absolute, color=c_bear, textcolor=c_text, display=display.none)
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+alertcondition(cross(kvo, inner_upper), title="Klinger Oscillator Crossing into Upper Donchian Channel", message="The Klinger Oscillator has crossed into upper Donchian Channel.")
+alertcondition(cross(kvo, inner_lower), title="Klinger Oscillator Crossing into Lower Donchian Channel", message="The Klinger Oscillator has crossed into lower Donchian Channel.")
+alertcondition(cross(kvo, sig), title="Klinger Oscillator Crossing Signal Line", message="The Klinger Oscillator has crossed the signal line.")
+alertcondition(cross(kvo, 0), title="Klinger Oscillator Crossing Center Line", message="The Klinger Oscillator has crossed the center line.")
+alertcondition(cross(sig, 0), title="Signal Line Crossing Center Line", message="The Klinger Oscillator signal line has crossed the center line.")
+alertcondition(bull_cond, title="Bull Div", message="+ Klinger Oscillator bull div")
+alertcondition(hdn_bull_cond, title="Hidden Bull Div", message="+ Klinger Oscillator hidden bull div")
+alertcondition(bear_cond, title="Bear Div", message="+ Klinger Oscillator bear div")
+alertcondition(hdn_bear_cond, title="Hidden Bear Div", message="+ Klinger Oscillator hidden bear div")
