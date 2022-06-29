@@ -75,5 +75,6 @@
 </p>
 </p>
 
+<center><a rel="dofollow" href="http://landindex.io">Metaverse analytics</a></center>
 
 
