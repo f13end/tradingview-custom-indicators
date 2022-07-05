@@ -9,7 +9,7 @@
   <br />
    <h3 align="center"><strong>TradingView Custom Indicators</strong></h3>
   <p align="center">
-    An awesome collection of the various technical indicators implemented in Pine Script Language.
+    An awesome collection of the various technical indicators implemented in Pine Script Language.<br>
     https://twitter.com/coinciyiz
   
 <br />
