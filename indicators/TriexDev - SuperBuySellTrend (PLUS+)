@@ -1,0 +1,491 @@
+//@version=5
+indicator('TriexDev - SuperBuySellTrend (PLUS+)', overlay=true, format=format.price, precision=2)
+
+// The average true range (ATR) is a technical analysis indicator, which
+// measures market volatility by decomposing the entire range of an 
+// asset price for that period.
+
+// The true range indicator is taken as the greatest of the following: 
+// current high - the current low; 
+// the absolute value of the current high - the previous close; 
+// and the absolute value of the current low - the previous close. 
+
+// The ATR is then a moving average, generally using 10/14 days, of the
+// true ranges.
+
+// Set up ATR, Multipliers & Timeframe/Periods
+// Config
+Periods = input(title='ATR Period', defval=10)
+src = input(hl2, title='Source')
+Multiplier1 = input.float(title='ATR Multiplier 1', step=0.1, defval=0.8)
+Multiplier2 = input.float(title='ATR Multiplier 2', step=0.1, defval=1.6)
+changeATR = input(title='Change ATR Calculation Method ?', defval=true)
+showsignals = input(title='Show Buy/Sell Signals ?', defval=true)
+highlighting = input(title='Highlighter On/Off ?', defval=true)
+// Toggles
+toggleBBon = input.bool(group='Bollinger Bands', title='Toggle Bollinger Bands', defval=false, inline='bb')
+toggleVolumeOn = input.bool(group='Up/Down Volume Analysis', title='Up/Down Volume Analysis', defval=false, inline='updownvolon')
+// vectorcandleson = input(title='Vector Candles On/Off ? - toggle not working', defval=false)
+atr2 = ta.sma(ta.tr, Periods)
+atr = changeATR ? ta.atr(Periods) : atr2
+// Set up the initial direction buy/sell signals
+up = src - Multiplier1 * atr
+up1 = nz(up[1], up)
+up := close[1] > up1 ? math.max(up, up1) : up
+dn = src + Multiplier1 * atr
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? math.min(dn, dn1) : dn
+trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+upPlot = plot(trend == 1 ? up : na, title='Up Trend', style=plot.style_linebr, linewidth=2, color=color.new(color.green, 0))
+buySignal = trend == 1 and trend[1] == -1
+plotshape(buySignal ? up : na, title='UpTrend Begins', location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.green, 0))
+plotshape(buySignal and showsignals ? up : na, title='Buy', text='Buy', location=location.absolute, style=shape.labelup, size=size.tiny, color=color.new(color.green, 0), textcolor=color.new(color.white, 0))
+dnPlot = plot(trend == 1 ? na : dn, title='Down Trend', style=plot.style_linebr, linewidth=2, color=color.new(color.red, 0))
+sellSignal = trend == -1 and trend[1] == 1
+plotshape(sellSignal ? dn : na, title='DownTrend Begins', location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.red, 0))
+plotshape(sellSignal and showsignals ? dn : na, title='Sell', text='Sell', location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.new(color.red, 0), textcolor=color.new(color.white, 0))
+mPlot = plot(ohlc4, title='', style=plot.style_circles, linewidth=0)
+longFillColor = highlighting ? trend == 1 ? color.green : color.white : color.white
+shortFillColor = highlighting ? trend == -1 ? color.red : color.white : color.white
+fill(mPlot, upPlot, title='UpTrend Highlighter', color=longFillColor, transp=90)
+fill(mPlot, dnPlot, title='DownTrend Highlighter', color=shortFillColor, transp=90)
+alertcondition(buySignal, title='SBST Buy', message='SBST Buy!')
+alertcondition(sellSignal, title='SBST Sell', message='SBST Sell!')
+changeCond = trend != trend[1]
+alertcondition(changeCond, title='SBST Direction Change', message='SBST has changed direction!')
+// Set up the confirmation buy/sell signals
+upx = src - Multiplier2 * atr
+upx1 = nz(upx[1], upx)
+upx := close[1] > upx1 ? math.max(upx, upx1) : upx
+dnx = src + Multiplier2 * atr
+dnx1 = nz(dnx[1], dnx)
+dnx := close[1] < dnx1 ? math.min(dnx, dnx1) : dnx
+trendx = 1
+trendx := nz(trendx[1], trendx)
+trendx := trendx == -1 and close > dnx1 ? 1 : trendx == 1 and close < upx1 ? -1 : trendx
+upxPlot = plot(trendx == 1 ? upx : na, title='Up Trend', style=plot.style_linebr, linewidth=2, color=color.rgb(0, 255, 0))
+buySignalx = trendx == 1 and trendx[1] == -1
+plotshape(buySignalx ? upx : na, title='UpTrend Confirmed', location=location.absolute, style=shape.circle, size=size.tiny, color=color.rgb(0, 255, 0), transp=0)
+plotshape(buySignalx and showsignals ? upx : na, title='Buy', text='Buy', location=location.absolute, style=shape.labelup, size=size.tiny, color=color.rgb(0, 255, 0), textcolor=color.new(color.black, 0), transp=0)
+dnxPlot = plot(trendx == 1 ? na : dnx, title='Down Trend', style=plot.style_linebr, linewidth=2, color=color.rgb(255, 0, 0))
+sellSignalx = trendx == -1 and trendx[1] == 1
+plotshape(sellSignalx ? dnx : na, title='DownTrend Confirmed', location=location.absolute, style=shape.circle, size=size.tiny, color=color.rgb(255, 0, 0), transp=0)
+plotshape(sellSignalx and showsignals ? dnx : na, title='Sell', text='Sell', location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.rgb(255, 0, 0), textcolor=color.new(color.white, 0), transp=0)
+mxPlot = plot(ohlc4, title='', style=plot.style_circles, linewidth=0)
+longFillColorx = highlighting ? trendx == 1 ? color.green : color.white : color.white
+shortFillColorx = highlighting ? trendx == -1 ? color.red : color.white : color.white
+fill(mxPlot, upxPlot, title='UpTrend Highlighter', color=longFillColorx, transp=90)
+fill(mxPlot, dnxPlot, title='DownTrend Highlighter', color=shortFillColorx, transp=90)
+alertcondition(buySignalx, title='SBST Buy Confirm', message='SBST Buy Direction Confirmed!')
+alertcondition(sellSignalx, title='SBST Sell Confirm', message='SBST Sell Direction Confirmed!')
+changeCondx = trendx != trendx[1]
+alertcondition(changeCondx, title='SBST Direction Confirmation', message='SBST has confirmed direction!')
+
+// Config
+pivot_offset_input = input.int(group='Label offsets', title='Pivot', defval=-5, inline='labeloffset')
+label_offset_input = input.int(group='Label offsets', title='MA/HiLo', defval=5, inline='labeloffset')
+// Vector candles inspired from TradersReality
+// Price, Volume, Support, Resistance Analysis (PVSRA)
+// PVSRA helps determine if the Marker Makers are bearish or bullish, and if their price movement is in the "run for profits"  or "position building" phase.
+bool overridesym = input.bool(group='PVSRA', title='Override chart symbol?', defval=false, inline='pvsra')
+string pvsra_sym = input.symbol(group='PVSRA', title='', defval='INDEX:BTCUSD', tooltip='You can use INDEX:BTCUSD or you can combine multiple feeds, for example \'(BINANCE:BTCUSDT+COINBASE:BTCUSD)\'. Note that adding too many will slow things down.', inline='pvsra')
+// EMA
+showEmas = input.bool(group='EMAs', title='Show EMAs?', defval=true, inline='showemas')
+labelEmas = input.bool(group='EMAs', title='EMA Labels?', defval=false, inline='showemas')
+threeEmaColor = input.color(group='EMAs', title='50', defval=color.rgb(31, 188, 211, 0), inline='emacolors')
+fourEmaColor = input.color(group='EMAs', title='200', defval=color.rgb(255, 255, 255, 0), inline='emacolors')
+fiveEmaColor = input.color(group='EMAs', title='800', defval=color.rgb(50, 34, 144, 0), inline='emacolors')
+EmaCloudColor = input.color(group='EMAs', title='EMA Cloud', defval=color.rgb(155, 47, 174, 60), inline='emacloud')
+EmaCloudBorderColor = input.color(group='EMAs', title='Border', defval=color.rgb(18, 137, 123, 100), inline='emacloud')
+// Pivot Points
+showDayHighLow = input.bool(group='Daily High/low', title='Show Hi/Lo: Daily?', defval=true, inline='highlow')
+showWeekHighLow = input.bool(group='Daily High/low', title='Weekly?', defval=true, inline='highlow')
+showDayHighLowLabels = input.bool(group='Daily High/low', title='Show labels?', defval=true, inline='highlow')
+
+/// market boxes and daily open only on intraday
+bool show = timeframe.isminutes and timeframe.multiplier <= 240 and timeframe.multiplier >= 4
+
+bool show_dly = timeframe.isminutes  //and timeframe.multiplier < 240
+bool show_rectangle9 = input.bool(group='Daily Open', defval=true, title='Show: line ?', inline='dopenconf') and show_dly
+bool show_label9 = input.bool(group='Daily Open', defval=true, title='Label?', inline='dopenconf') and show_rectangle9 and show_dly
+bool showallDly = input.bool(group='Daily Open', defval=false, title='Show historical daily opens?', inline='dopenconf')
+color sess9col = input.color(group='Daily Open', title='Daily Open Color', defval=color.rgb(254, 234, 78, 0), inline='dopenconf1')
+//color sess9colLabel = input(group="Daily Open", title="", type=input.color, defval=color.rgb(254,234,78,0), inline="dopenconf1")
+
+// Psy Levels
+bool showPsy = timeframe.isminutes and (timeframe.multiplier == 60 or timeframe.multiplier == 30 or timeframe.multiplier == 15 or timeframe.multiplier == 5 or timeframe.multiplier == 3 or timeframe.multiplier == 1)   
+bool show_psylevels = input.bool(group='Weekly Psy Levels (valid tf 1h/30min/15min/5min/3min/1min)', defval=true, title='Show: Levels?', inline='psyconf') and showPsy
+bool show_psylabel = input.bool(group='Weekly Psy Levels (valid tf 1h/30min/15min/5min/3min/1min)', defval=true, title='Labels?', inline='psyconf', tooltip="The Psy High/Low will only show on these timeframes: 1h/30min/15min/5min/3min/1min. It is disabled on all others. This is because the calculation requires a candle to start at the correct time for Sydney but in other timeframes the data does not have values at the designated time for the Sydney session.") and show_psylevels
+bool showallPsy = false//input.bool(Weekly Psy Levels (valid tf 1h/30min/15min/5min/3min/1min), defval=false, title='Show historical psy levels?', inline='psyconf')
+color psycolH = input.color(group='Weekly Psy Levels (valid tf 1h/30min/15min/5min/3min/1min)', title='Psy Hi Color', defval=color.new(color.orange, 30), inline='psyconf1')
+color psycolL = input.color(group='Weekly Psy Levels (valid tf 1h/30min/15min/5min/3min/1min)', title='Psy Low Color', defval=color.new(color.orange, 30), inline='psyconf1')
+var string psy_gmt = "GMT+3"
+
+//Non repainting security
+f_security(_symbol, _res, _src, _repaint) =>
+    request.security(_symbol, _res, _src[_repaint ? 0 : barstate.isrealtime ? 1 : 0])[_repaint ? 0 : barstate.isrealtime ? 0 : 1]
+
+// Basic vars (needed in functions)
+
+// Only render intraday
+validTimeFrame = timeframe.isintraday == true
+
+// If above the 5 minute, we start drawing yesterday. below, we start today
+levelsstart = timeframe.isseconds == true or timeframe.isminutes == true and timeframe.multiplier < 5 ? time('D') : time('D') - 86400 * 1000
+levelsstartbar = ta.barssince(levelsstart)
+
+// Functions
+// new_bar: check if we're on a new bar within the session in a given resolution
+new_bar(res) =>
+    ta.change(time(res)) != 0
+
+pivot_label_x_offset = time_close + pivot_offset_input * timeframe.multiplier * 60 * 1000
+label_x_offset = time_close + label_offset_input * timeframe.multiplier * 60 * 1000
+
+//Right_Label
+r_label(ry, rtext, rstyle, rcolor, valid) =>
+    if valid and barstate.isrealtime
+        rLabel = label.new(x=label_x_offset, y=ry, text=rtext, xloc=xloc.bar_time, style=rstyle, textcolor=rcolor, textalign=text.align_right)
+        label.delete(rLabel[1])
+        
+draw_line(x_series, res, tag, xColor, xStyle, xWidth, xExtend, isLabelValid, xLabelOffset) =>
+    var line x_line = na
+
+    if new_bar(res) and validTimeFrame
+        line.set_x2(x_line, bar_index)
+        line.set_extend(x_line, extend.none)
+
+        x_line := line.new(bar_index, x_series, bar_index, x_series, extend=xExtend, color=xColor, style=xStyle, width=xWidth)
+        line.delete(x_line[1])
+
+    if not na(x_line) and line.get_x2(x_line) != bar_index
+        line.set_x2(x_line, bar_index)
+
+    if isLabelValid  //showADRLabels and validTimeFrame
+        x_label = label.new(xLabelOffset, x_series, tag, xloc=xloc.bar_time, style=label.style_none, textcolor=xColor)
+        label.delete(x_label[1])
+
+draw_pivot(pivot_level, res, tag, pivotColor, pivotStyle, pivotWidth, pivotExtend, isLabelValid) =>
+    var line pivot_line = na
+
+    // Start drawing yesterday
+    if new_bar(res) and validTimeFrame
+        line.set_x2(pivot_line, bar_index)
+        line.set_extend(pivot_line, extend.none)
+        pivot_line := line.new(bar_index, pivot_level, bar_index, pivot_level, extend=pivotExtend, color=pivotColor, style=pivotStyle, width=pivotWidth)
+        line.delete(pivot_line[1])
+    if not na(pivot_line) and line.get_x2(pivot_line) != bar_index
+        line.set_x2(pivot_line, bar_index)
+    if isLabelValid  //showADRLabels and validTimeFrame
+        pivot_label = label.new(pivot_label_x_offset, pivot_level, tag, xloc=xloc.bar_time, style=label.style_none, textcolor=pivotColor, textalign=text.align_right)
+
+        label.delete(pivot_label[1])
+    if not barstate.islast
+        line.set_x2(pivot_line, x=bar_index)
+    else
+        line.set_xloc(pivot_line, levelsstart, time_close + 1 * 86400000, xloc=xloc.bar_time)
+    pivot_line
+
+draw_linelabel_gmt_custSession(pivot_level, res, sessionString, tag, pivotColor, pivotStyle, pivotWidth, pivotExtend, isLabelValid, label_offset, sessStartAdjustMilis, gmt_off_val) =>
+    var line pivot_line = na
+
+    gmtD = gmt_off_val
+    current_session = time(res, sessionString, gmtD) - sessStartAdjustMilis
+    if not na(current_session)
+        pivot_line = line.new(current_session, pivot_level, timenow, pivot_level, xloc=xloc.bar_time, extend=pivotExtend, color=pivotColor, style=pivotStyle, width=pivotWidth)
+        line.delete(pivot_line[1])
+    if isLabelValid
+        pivot_label = label.new(label_offset, pivot_level, tag, xloc=xloc.bar_time, style=label.style_none, textcolor=pivotColor, textalign=text.align_right)
+        label.delete(pivot_label[1])
+    pivot_line
+
+//sessions line function
+showOrFunctionX(show_orX, sessX, sessXOrCalc, orX_h, orX_l, sessXcol) =>
+    if show_orX
+        if sessX and sessXOrCalc
+            line.new(bar_index, orX_h, bar_index, orX_l, color=sessXcol, style=line.style_dotted)
+
+    if not sessX and sessX[1]
+        line.new(bar_index - 1, orX_h[1], bar_index - 1, orX_l[1], color=sessXcol, style=line.style_dotted)
+
+//calculate orX_h, orX_l
+calcXOrHL(sessX, sessXorcalc, lookbackOrBars) =>
+    float orX_h = na
+    float orX_l = na
+    orX_h := sessX ? orX_h[1] : na
+    orX_l := sessX ? orX_l[1] : na
+
+    if sessXorcalc
+        for i = 0 to lookbackOrBars by 1
+            orX_h := i == 0 ? high : math.max(high[i], orX_h)
+            orX_l := i == 0 ? low : math.min(low[i], orX_l)
+            orX_l
+    [orX_l, orX_h]
+
+////////////
+//calculate sess and sessorcalc function
+///////////
+// calcSessAndSessOr(sessXTime, showX_or, lookbackMinsX, lookbackOrBarsX) =>
+//     int sessX = time(timeframe.period, sessXTime)
+//     bool sessXorcalc = sessX[lookbackOrBarsX] and na(sessX[lookbackOrBarsX + 1]) and showX_or
+//     [sessX, sessXorcalc]
+
+// EMAs
+threeEmaLength = 50
+fourEmaLength = 200
+fiveEmaLength = 800
+
+threeEma = ta.ema(close, threeEmaLength)
+plot(showEmas ? threeEma : na, color=threeEmaColor, title='50 Ema')
+
+fourEma = ta.ema(close, fourEmaLength)
+plot(showEmas ? fourEma : na, color=fourEmaColor, title='200 Ema')
+
+fiveEma = ta.ema(close, fiveEmaLength)
+plot(showEmas ? fiveEma : na, color=fiveEmaColor, linewidth=2, title='800 Ema')
+
+// Ema 50 cloud placed here for readability on data window
+cloudSizeEMA = ta.stdev(close, threeEmaLength * 2) / 4
+p1EMA = plot(showEmas ? threeEma + cloudSizeEMA : na, 'Upper 50 Ema Cloud', color=EmaCloudBorderColor, offset=0)
+p2EMA = plot(showEmas ? threeEma - cloudSizeEMA : na, 'Lower 50 Ema Cloud', color=EmaCloudBorderColor, offset=0)
+fill(p1EMA, p2EMA, title='EMA 50 Cloud', color=EmaCloudColor, transp=90)
+
+//Label emas
+
+r_label(threeEma, '50 Ema', label.style_none, threeEmaColor, labelEmas)
+r_label(fourEma, '200 Ema', label.style_none, fourEmaColor, labelEmas)
+r_label(fiveEma, '800 Ema', label.style_none, fiveEmaColor, labelEmas) //ry, rtext, rstyle, rcolor,valid
+
+// Get Daily price data
+dayHigh = f_security(syminfo.tickerid, 'D', high, false)
+dayLow = f_security(syminfo.tickerid, 'D', low, false)
+dayOpen = f_security(syminfo.tickerid, 'D', open, false)
+dayClose = f_security(syminfo.tickerid, 'D', close, false)
+
+// Daily H/L 
+weekHigh = f_security(syminfo.tickerid, 'W', high, false)
+weekLow = f_security(syminfo.tickerid, 'W', low, false)
+
+validDHLTimeFrame = timeframe.isintraday == true
+validWHLTimeFrame = timeframe.isintraday == true or timeframe.isdaily == true
+isToday = year(timenow) == year(time) and month(timenow) == month(time) and dayofmonth(timenow) == dayofmonth(time)
+isThisWeek = year(timenow) == year(time) and weekofyear(timenow) == weekofyear(time)
+
+plot(validDHLTimeFrame and showDayHighLow and (showDayHighLow ? true : isToday) ? dayHigh : na, linewidth=1, color=color.new(color.blue, 50), style=plot.style_linebr, title="YDay Hi")
+plot(validDHLTimeFrame and showDayHighLow and (showDayHighLow ? true : isToday) ? dayLow : na, linewidth=1, color=color.new(color.blue, 50), style=plot.style_linebr, title="YDay Lo")
+r_label(dayHigh, 'YDay Hi', label.style_none, color.blue, validDHLTimeFrame and showDayHighLow and showDayHighLowLabels)  //ry, rtext, rstyle, rcolor, valid
+r_label(dayLow, 'YDay Lo', label.style_none, color.blue, validDHLTimeFrame and showDayHighLow and showDayHighLowLabels)
+
+plot(validWHLTimeFrame and showWeekHighLow and (showWeekHighLow ? true : isThisWeek) ? weekHigh : na, linewidth=1, color=color.new(color.green, 60), style=plot.style_linebr, title="LWeek Hi")
+plot(validWHLTimeFrame and showWeekHighLow and (showWeekHighLow ? true : isThisWeek) ? weekLow : na, linewidth=1, color=color.new(color.green, 60), style=plot.style_linebr, title="LWeek Lo")
+
+r_label(weekHigh, 'LWeek Hi', label.style_none, color.green, validWHLTimeFrame and showWeekHighLow and showDayHighLowLabels)  //ry, rtext, rstyle, rcolor, valid
+r_label(weekLow, 'LWeek Lo', label.style_none, color.green, validWHLTimeFrame and showWeekHighLow and showDayHighLowLabels)
+
+// PVSRA
+// From MT4 source:
+
+//   Situation "Climax"
+//   Bars with volume >= 200% of the average volume of the 10 previous chart TFs, and bars
+//   where the product of candle spread x candle volume is >= the highest for the 10 previous
+//   chart time TFs.
+//   Default Colors:  Bull bars are green and bear bars are red.
+
+//   Situation "Volume Rising Above Average"
+//   Bars with volume >= 150% of the average volume of the 10 previous chart TFs.
+//   Default Colors:  Bull bars are blue and bear are blue-violet.
+
+// We want to be able to override where we get the volume data for the candles.
+pvsra_security(sresolution, sseries) =>
+    request.security(overridesym ? pvsra_sym : syminfo.tickerid, sresolution, sseries[barstate.isrealtime ? 1 : 0], barmerge.gaps_off, barmerge.lookahead_off)
+pvsra_security_1 = pvsra_security('', volume)
+pvsra_volume = overridesym == true ? pvsra_security_1 : volume
+pvsra_security_2 = pvsra_security('', high)
+pvsra_high = overridesym == true ? pvsra_security_2 : high
+pvsra_security_3 = pvsra_security('', low)
+pvsra_low = overridesym == true ? pvsra_security_3 : low
+pvsra_security_4 = pvsra_security('', close)
+pvsra_close = overridesym == true ? pvsra_security_4 : close
+pvsra_security_5 = pvsra_security('', open)
+pvsra_open = overridesym == true ? pvsra_security_5 : open
+
+r_label(high - (high - low) / 2, 'PVSRA Override Active!', label.style_none, color.orange, overridesym)  //ry, rtext, rstyle, rcolor, valid
+
+// The below math matches MT4 PVSRA indicator source
+// average volume from last 10 candles
+sum_1 = math.sum(pvsra_volume, 10)
+sum_2 = math.sum(volume, 10)
+av = overridesym == true ? sum_1 / 10 : sum_2 / 10
+//climax volume on the previous candle
+value2 = overridesym == true ? pvsra_volume * (pvsra_high - pvsra_low) : volume * (high - low)
+// highest climax volume of the last 10 candles
+hivalue2 = ta.highest(value2, 10)
+
+// VA value determines the bar color. va = 0: normal. va = 1: climax.  va = 2: rising
+iff_1 = pvsra_volume >= av * 1.5 ? 2 : 0
+iff_2 = pvsra_volume >= av * 2 or value2 >= hivalue2 ? 1 : iff_1
+iff_3 = volume >= av * 1.5 ? 2 : 0
+iff_4 = volume >= av * 2 or value2 >= hivalue2 ? 1 : iff_3
+va = overridesym == true ? iff_2 : iff_4
+
+// Bullish or bearish coloring
+isBull = overridesym == true ? pvsra_close > pvsra_open : close > open
+
+// CUColor = color.lime 
+CUColor = input.color(group='PVSRA', title='Climax Up Color', defval=color.lime, inline='pvsra') // Climax up (bull) bull and bear both start with b so it would be weird hence up down
+// alternate choice green or lime
+// CUColor = input.c
+CDColor = input.color(group='PVSRA', title='Climax Down Color', defval=color.red, inline='pvsra') // Climax down (bear)
+// default red
+
+AUColor = input.color(group='PVSRA', title='Volume Rising Above Average Up Color', defval=color.blue, inline='pvsra') // Volume rising above average up (bull)
+// default red
+ADColor = input.color(group='PVSRA', title='Volume Rising Above Average Down Color', defval=color.fuchsia, inline='pvsra') // Volume rising above average down (bear) blueviolet other colour to try
+// default green
+
+NUColor = #999999
+NDColor = #4d4d4d
+
+// candleColor = iff(climax,iff(isBull,CUColor,CDColor),iff(aboveA,iff(isBull,AUColor,ADColor),iff(isBull,NUColor,NDColor)))
+iff_5 = va == 2 ? AUColor : NUColor
+iff_6 = va == 1 ? CUColor : iff_5
+iff_7 = va == 2 ? ADColor : NDColor
+iff_8 = va == 1 ? CDColor : iff_7
+candleColor = isBull ? iff_6 : iff_8
+barcolor(candleColor)
+
+alertcondition(va > 0, title='Alert on Vector Candle', message='{{ticker}} Vector Candle on the {{interval}}')
+
+// Daily open 
+daily_open = request.security(syminfo.tickerid, 'D', open, lookahead=barmerge.lookahead_on)
+// Date & time variables
+current_year = year(timenow)
+current_month = month(timenow)
+current_weekofyear = weekofyear(timenow)
+current_dayofmonth = dayofmonth(timenow)
+current_dayofweek = dayofweek(timenow)
+
+// Opens (re-test previous values, so we take the closing price as that is defining the upcoming open price)
+
+bar_is_today = year == current_year and weekofyear == current_weekofyear and dayofweek == current_dayofweek
+plot(show_rectangle9 and bar_is_today and validTimeFrame ? daily_open : na, title='Daily open', color=sess9col, style=plot.style_line, linewidth=1)
+
+// Labels
+if show_label9 and barstate.isrealtime
+    if show_rectangle9
+        r_label(daily_open, 'Daily Open', label.style_none, sess9col, validTimeFrame)
+
+
+//************//
+// Psy Levels //
+//************//
+calc_psy_hilo(gmtoffsetPsy) =>
+
+    //4 hour res based on how mt4 does it
+    //mt4 code
+    //int Li_4 = iBarShift(NULL, PERIOD_H4, iTime(NULL, PERIOD_W1, Li_0)) - 2 - Offset;
+    //ObjectCreate("PsychHi", OBJ_TREND, 0, Time[0], iHigh(NULL, PERIOD_H4, iHighest(NULL, PERIOD_H4, MODE_HIGH, 2, Li_4)), iTime(NULL, PERIOD_W1, 0), iHigh(NULL, PERIOD_H4,
+    //iHighest(NULL, PERIOD_H4, MODE_HIGH, 2, Li_4)));
+
+    //so basically because the session is 8 hours and we are looking at a 4 hour resolution we only need to take the highest high an lowest low of 2 bars
+    //we use the gmt offset to adjust the 0000-0800 session to Sydney open which is at 2100 during dst and at 2000 otherwize. (dst - spring foward, fall back)
+    in_session = time('240', '0000-0800:1', gmtoffsetPsy)
+    new_session = in_session and not in_session[1]
+    float psy_high = 0.0
+    float psy_low = 100000000000.0
+
+    psy_high := new_session ? high : in_session ? math.max(high, psy_high[1]) : psy_high[1]
+    psy_low := new_session ? low : in_session ? math.min(low, psy_low[1]) : psy_low[1]
+    [psy_high, psy_low]
+
+[psy_high, psy_low] = calc_psy_hilo(psy_gmt)
+//isThisWeekPsy = year(timenow, psy_gmt) == year(time, psy_gmt) and weekofyear(timenow, psy_gmt) == weekofyear(time, psy_gmt)
+
+//TODO cannot plot as max plots per script exceeded : removed market sessions plots
+plot(showPsy and show_psylevels and showallPsy ? psy_high : na, color=psycolH, style=plot.style_line, linewidth=1, editable=false, title="Psy-Hi")  //, offset=psy_plot_offset)
+plot(showPsy and show_psylevels and showallPsy ? psy_low : na, color=psycolL, style=plot.style_line, linewidth=1, editable=false, title="Psy-Lo")  //, offset=psy_plot_offset)
+
+//if barstate.isnew
+psy_calc_start = timestamp(psy_gmt, year, month, dayofweek.wednesday, 00, 00, 00)
+psy_calc_end = timestamp(psy_gmt, year, month, dayofweek.wednesday, 08, 00, 00)
+time_now_gmt = time('D', '0000-0800:1', psy_gmt)
+psy_calc_inProgress = not na(time_now_gmt - psy_calc_start >= 0) and not na(time_now_gmt - psy_calc_end <= 0)
+
+stylePsy = line.style_solid
+psy_hi_label = 'Psy-Hi'  //+tostring(gmtoffsetxxx)//tostring((timenow-timestamp(syminfo.timezone,year(time,syminfo.timezone),month(time,syminfo.timezone),dayofmonth(time,syminfo.timezone),hour(time,syminfo.timezone),minute(time,syminfo.timezone),second(time,syminfo.timezone)))/(1000*60*60))+" "+syminfo.timezone//+str.format("{0,date,h a ZZZ}", timestamp(year,month,dayofmonth,hour,minute,second)) + " "+syminfo.timezone
+psy_lo_label = 'Psy-Lo'
+
+if psy_calc_inProgress
+    //stylePsy := line.style_dashed //this does not work for style correctly but it does for the label which is odd
+    psy_hi_label := 'Psy-Hi calculating...'
+    psy_lo_label := 'Psy-Lo calculating...'  //+tostring(psy_calc_inProgress)
+    psy_lo_label
+
+if showallPsy
+    r_label(psy_high, psy_hi_label, label.style_none, psycolH, validTimeFrame and show_psylabel)
+    r_label(psy_low, psy_lo_label, label.style_none, psycolL, validTimeFrame and show_psylabel)
+    showallPsy  //just here to trick if-else into working
+else
+    if show_psylevels
+        draw_linelabel_gmt_custSession(psy_high, 'D', '0000-0800:1', psy_hi_label, psycolH, stylePsy, 1, extend.none, show_psylabel and show_psylevels, label_x_offset, 0, psy_gmt)
+        draw_linelabel_gmt_custSession(psy_low, 'D', '0000-0800:1', psy_lo_label, psycolL, stylePsy, 1, extend.none, show_psylabel and show_psylevels, label_x_offset, 0, psy_gmt)
+    showallPsy  //just here to trick if-else into working
+
+// Bollinger Bands
+lengthBB = input.int(20, minval=1, group="Bollinger Bands")
+srcBB = input(close, title="Source", group="Bollinger Bands")
+multBB = input.float(2.0, minval=0.001, maxval=50, title="StdDev", group="Bollinger Bands")
+basisBB = toggleBBon ? ta.sma(srcBB, lengthBB) : 0
+devBB = toggleBBon ? multBB * ta.stdev(srcBB, lengthBB) : 0
+upperBB = toggleBBon ? basisBB + devBB : 0
+lowerBB = toggleBBon ? basisBB - devBB : 0
+offsetBB = toggleBBon ? input.int(0, "Offset", minval = -500, maxval = 500, group="Bollinger Bands") : 0
+plot(basisBB, "Basis", color=#FF6D00, offset = offsetBB)
+p1 = plot(upperBB, "Upper", color=#2962FF, offset = offsetBB)
+p2 = plot(lowerBB, "Lower", color=#2962FF, offset = offsetBB)
+fill(p1, p2, title = "Background", color=color.rgb(33, 150, 243, 95))
+
+// Up/Down Volume Analysis
+lowerTimeframeTooltip = "The indicator scans lower timeframe data to approximate Up/Down volume. By default, the timeframe is chosen automatically. These inputs override this with a custom timeframe.
+ \n\nHigher timeframes provide more historical data, but the data will be less precise."
+useCustomTimeframeInput = input.bool(false, "Use custom timeframe", tooltip = lowerTimeframeTooltip)
+lowerTimeframeInput = input.timeframe("1", "Timeframe")
+
+upAndDownVolume() =>
+    posVol = 0.0
+    negVol = 0.0
+
+    switch
+        close >  open     => posVol += volume
+        close <  open     => negVol -= volume
+        close >= close[1] => posVol += volume
+        close <  close[1] => negVol -= volume
+
+    [posVol, negVol]
+
+lowerTimeframe = switch
+    useCustomTimeframeInput => lowerTimeframeInput
+    timeframe.isintraday    => "1"
+    timeframe.isdaily       => "5"
+    => "60"
+
+[upVolumeArray, downVolumeArray] = request.security_lower_tf(syminfo.tickerid, lowerTimeframe, upAndDownVolume())
+ 
+upVolume = toggleVolumeOn ? array.sum(upVolumeArray) : 0
+downVolume = toggleVolumeOn ? array.sum(downVolumeArray) : 0
+delta = toggleVolumeOn ? upVolume + downVolume : 0
+
+// colour inputs for up, down volumes
+upColor = input.color(group='Up/Down Volume Analysis', title='Up Volume Color', defval=color.new(color.green, 60), inline='updownvolon')
+downColor = input.color(group='Up/Down Volume Analysis', title='Down Volume Color', defval=color.new(color.red, 60), inline='updownvolon')
+
+plot(upVolume, "Up Volume", style = plot.style_columns, color=upColor)
+plot(downVolume, "Down Volume", style = plot.style_columns, color=downColor)
+plotchar(delta, "delta", "—", location.absolute, color = delta > 0 ? upColor : downColor, size = size.tiny)
+
+var cumVol = 0.
+cumVol += nz(volume)
+if barstate.islast and cumVol == 0
+    runtime.error("The data vendor doesn't provide volume data for this symbol.")
