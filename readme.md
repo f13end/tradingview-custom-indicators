@@ -69,13 +69,6 @@
 </p>
 <br />
 <br />
-<p align="center">
-  <a href="#">
-    <img src="https://user-images.githubusercontent.com/3318070/59153114-f5a13180-8a41-11e9-881a-71340d5400fb.png" alt="Logo">
-  </a>
-</p>
-</p>
 
-<center><a rel="dofollow" href="http://landindex.io">Metaverse analytics</a></center>
-
+</p>
 
